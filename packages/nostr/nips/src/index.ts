@@ -8,5 +8,6 @@ export * from "./lnurl";
 export * from "./nip44";
 export * from "./nip46";
 export * from "./nip19";
+export * from "./report";
 export * from "./zap";
 export * from "./zapRequest";

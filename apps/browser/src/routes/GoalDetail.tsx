@@ -4,6 +4,7 @@ import { formatSats, progressPercent, remainingLabel } from "backr-utils";
 import { createSignal, onMount } from "solid-js";
 import CommentSection from "../components/CommentSection";
 import CreatorCard from "../components/CreatorCard";
+import ReportForm from "../components/ReportForm";
 import ProgressMeter from "../components/ProgressMeter";
 import RelayBar from "../components/RelayBar";
 import ReportList from "../components/ReportList";
@@ -175,6 +176,15 @@ export default function GoalDetail() {
           </section>
           <SupporterList supporters={supporters()} />
           <CommentSection relayUrl={relay()} goalId={card()?.id ?? ""} goalAuthor={card()?.pubkey ?? ""} />
+          {isAuthor() && (
+            <ReportForm
+              relayUrl={relay()}
+              goalId={card()?.id ?? ""}
+              onPosted={(report) => {
+                setReports([...reports(), report].sort((a, b) => b.createdAt - a.createdAt));
+              }}
+            />
+          )}
           <ReportList reports={reports()} />
           {isAuthor() && !deleted() && (
             <section class="rounded-lg border border-red-900 p-4">
