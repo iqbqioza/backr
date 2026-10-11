@@ -42,6 +42,8 @@ export interface LnurlPayInfo {
   callback: string;
   minSendable: number;
   maxSendable: number;
+  /** zap receipt 署名者。NIP-57 Appendix C で必須 */
+  nostrPubkey: string;
 }
 
 /** LNURL-pay 初回取得。Zap 未対応・範囲外は投げる */
@@ -62,11 +64,26 @@ export async function fetchLnurlPay(payUrl: string): Promise<LnurlPayInfo> {
   if (typeof data["minSendable"] !== "number" || typeof data["maxSendable"] !== "number") {
     throw new Error("送金範囲が不正です");
   }
+  if (typeof data["nostrPubkey"] !== "string" || !/^[0-9a-f]{64}$/.test(data["nostrPubkey"])) {
+    throw new Error("nostrPubkey がありません");
+  }
   return {
     callback: data["callback"],
     minSendable: data["minSendable"],
     maxSendable: data["maxSendable"],
+    nostrPubkey: data["nostrPubkey"],
   };
+}
+
+const payInfoCache = new Map<string, { info: LnurlPayInfo; at: number }>();
+
+/** LNURL-pay 取得 (5分キャッシュ)。Zap フローと集計検証で共有 */
+export async function fetchLnurlPayCached(payUrl: string, ttlMs = 300000): Promise<LnurlPayInfo> {
+  const cached = payInfoCache.get(payUrl);
+  if (cached !== undefined && Date.now() - cached.at < ttlMs) return cached.info;
+  const info = await fetchLnurlPay(payUrl);
+  payInfoCache.set(payUrl, { info, at: Date.now() });
+  return info;
 }
 
 export function checkAmountRange(amountMsats: bigint, info: LnurlPayInfo): string | null {

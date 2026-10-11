@@ -4,12 +4,13 @@ import RelayBar from "../components/RelayBar";
 import { EmptyState, ErrorState, Loading } from "../components/States";
 import { DEFAULT_RELAY } from "../lib/const";
 import {
-  fetchCardTallies,
   fetchGoalCards,
+  fetchProfiles,
   sortGoalCards,
   type GoalCardData,
   type SortMode,
 } from "../lib/goals";
+import { fetchCardZapData, type ValidatedGoalZap } from "../lib/supporters";
 
 const TABS: { id: SortMode; label: string }[] = [
   { id: "new", label: "新着" },
@@ -20,7 +21,7 @@ const TABS: { id: SortMode; label: string }[] = [
 export default function Home() {
   const [relay, setRelay] = createSignal(DEFAULT_RELAY);
   const [cards, setCards] = createSignal<GoalCardData[]>([]);
-  const [tallies, setTallies] = createSignal(new Map<string, bigint>());
+  const [zapData, setZapData] = createSignal(new Map<string, ValidatedGoalZap>());
   const [mode, setMode] = createSignal<SortMode>("new");
   const [loading, setLoading] = createSignal(true);
   const [error, setError] = createSignal<string | null>(null);
@@ -32,9 +33,10 @@ export default function Home() {
     fetchGoalCards(url)
       .then((fetched) => {
         setCards(fetched);
-        return fetchCardTallies(url, fetched);
+        return fetchProfiles(url, fetched.map((c) => c.pubkey));
       })
-      .then(setTallies)
+      .then((profiles) => fetchCardZapData(url, cards(), profiles))
+      .then(setZapData)
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : "取得に失敗しました");
       })
@@ -45,7 +47,9 @@ export default function Home() {
 
   onMount(load);
 
-  const sorted = () => sortGoalCards(cards(), tallies(), mode());
+  const totals = () =>
+    new Map([...zapData()].map(([id, data]) => [id, data.totalMsats] as const));
+  const sorted = () => sortGoalCards(cards(), totals(), mode());
 
   return (
     <div>
@@ -82,7 +86,7 @@ export default function Home() {
       )}
       <div class="grid gap-4 md:grid-cols-2">
         {sorted().map((card) => (
-          <GoalCard card={card} raisedMsats={tallies().get(card.id) ?? 0n} />
+          <GoalCard card={card} raisedMsats={zapData().get(card.id)?.totalMsats ?? 0n} />
         ))}
       </div>
     </div>

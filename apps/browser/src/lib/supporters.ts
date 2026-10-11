@@ -1,6 +1,7 @@
 import { bolt11TagAmountMsats } from "backr-nostr-utils";
-import type { NostrEventLike } from "backr-nostr-nips";
-import { fetchReceipts } from "./goals";
+import { validateZapReceipt, type NostrEventLike } from "backr-nostr-nips";
+import { fetchReceipts, type GoalCardData, type ProfileView } from "./goals";
+import { fetchLnurlPayCached, resolvePayTarget } from "./zap";
 
 export interface Supporter {
   pubkey: string;
@@ -55,12 +56,76 @@ export function toSupporters(
   return out.sort((a, b) => b.createdAt - a.createdAt);
 }
 
-/** 支援者一覧を取得 */
-export async function fetchSupporters(
+export interface ValidatedGoalZap {
+  totalMsats: bigint;
+  count: number;
+  supporters: Supporter[];
+  /** LNURL 署名者まで照合できたか */
+  verified: boolean;
+}
+
+const UNVERIFIED: ValidatedGoalZap = { totalMsats: 0n, count: 0, supporters: [], verified: false };
+
+/**
+ * 検証済み集計: LNURL-pay の nostrPubkey と各 receipt を照合 (NIP-57 Appendix F)。
+ * 送金先不明・取得失敗時は未検証 (集計 0) を返す。
+ */
+export async function fetchGoalZapData(
   relayUrl: string,
-  goalId: string,
-  closedAt?: number,
-): Promise<Supporter[]> {
-  const receipts = await fetchReceipts(relayUrl, goalId);
-  return toSupporters(receipts, closedAt);
+  card: GoalCardData,
+  profile: ProfileView | null,
+): Promise<ValidatedGoalZap> {
+  const target = resolvePayTarget(profile);
+  if (target === null) return UNVERIFIED;
+  let signer: string;
+  try {
+    signer = (await fetchLnurlPayCached(target.payUrl)).nostrPubkey;
+  } catch {
+    return UNVERIFIED;
+  }
+  let receipts: NostrEventLike[];
+  try {
+    receipts = await fetchReceipts(relayUrl, card.id);
+  } catch {
+    return { ...UNVERIFIED, verified: true };
+  }
+  const valid = receipts.filter(
+    (receipt) =>
+      validateZapReceipt(
+        receipt,
+        {
+          goalId: card.id,
+          closedAt: card.closedAt,
+          expectedSigner: signer,
+          expectedLnurl: target.lnurl,
+        },
+        (tags) => bolt11TagAmountMsats(tags),
+      ).length === 0,
+  );
+  const supporters = toSupporters(valid, card.closedAt);
+  return {
+    totalMsats: supporters.reduce((sum, s) => sum + s.msats, 0n),
+    count: supporters.length,
+    supporters,
+    verified: true,
+  };
+}
+
+/** 一覧カード分の検証済み集計を一括取得 (失敗分は未検証) */
+export async function fetchCardZapData(
+  relayUrl: string,
+  cards: GoalCardData[],
+  profiles: Map<string, ProfileView>,
+): Promise<Map<string, ValidatedGoalZap>> {
+  const entries = await Promise.all(
+    cards.map(async (card) => {
+      try {
+        const data = await fetchGoalZapData(relayUrl, card, profiles.get(card.pubkey) ?? null);
+        return [card.id, data] as const;
+      } catch {
+        return [card.id, UNVERIFIED] as const;
+      }
+    }),
+  );
+  return new Map(entries);
 }

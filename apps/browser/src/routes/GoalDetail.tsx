@@ -16,7 +16,6 @@ import { DEFAULT_RELAY } from "../lib/const";
 import { requestDeletion } from "../lib/deletion";
 import {
   fetchGoalById,
-  fetchGoalTally,
   fetchProfile,
   fetchProfiles,
   fetchReports,
@@ -25,7 +24,7 @@ import {
   type ReportData,
 } from "../lib/goals";
 import { mergeReports } from "../lib/reports";
-import { fetchSupporters, type Supporter } from "../lib/supporters";
+import { fetchGoalZapData, type Supporter } from "../lib/supporters";
 
 export default function GoalDetail() {
   const params = useParams();
@@ -33,6 +32,7 @@ export default function GoalDetail() {
   const [card, setCard] = createSignal<GoalCardData | null>(null);
   const [raised, setRaised] = createSignal(0n);
   const [supporters, setSupporters] = createSignal<Supporter[]>([]);
+  const [verified, setVerified] = createSignal(false);
   const [supporterProfiles, setSupporterProfiles] = createSignal(new Map<string, ProfileView>());
   const [reports, setReports] = createSignal<ReportData[]>([]);
   const [profile, setProfile] = createSignal<ProfileView | null>(null);
@@ -61,12 +61,15 @@ export default function GoalDetail() {
           return;
         }
         setCard(found);
-        return Promise.all([refreshStats(), fetchReports(url, goalId), fetchProfile(url, found.pubkey)]).then(
-          ([, fetchedReports, fetchedProfile]) => {
+        return fetchProfile(url, found.pubkey).then((fetchedProfile) => {
+          setProfile(fetchedProfile);
+          return Promise.all([
+            refreshStats(fetchedProfile),
+            fetchReports(url, goalId),
+          ]).then(([, fetchedReports]) => {
             setReports(fetchedReports);
-            setProfile(fetchedProfile);
-          },
-        );
+          });
+        });
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : "取得に失敗しました");
@@ -76,18 +79,16 @@ export default function GoalDetail() {
       });
   };
 
-  const refreshStats = () => {
+  const refreshStats = (profile: ProfileView | null) => {
     const current = card();
     if (current === null) return Promise.resolve();
-    return Promise.all([
-      fetchGoalTally(relay(), current.id, current.closedAt),
-      fetchSupporters(relay(), current.id, current.closedAt),
-    ]).then(([tally, fetchedSupporters]) => {
-      setRaised(tally.totalMsats);
-      setSupporters(fetchedSupporters);
+    return fetchGoalZapData(relay(), current, profile).then((data) => {
+      setRaised(data.totalMsats);
+      setSupporters(data.supporters);
+      setVerified(data.verified);
       return fetchProfiles(
         relay(),
-        fetchedSupporters.map((s) => s.pubkey),
+        data.supporters.map((s) => s.pubkey),
       );
     }).then(setSupporterProfiles);
   };
@@ -165,6 +166,11 @@ export default function GoalDetail() {
             </div>
             <div class="sm:col-span-4">
               <ProgressMeter raisedMsats={raised()} goalMsats={card()?.goalMsats ?? 0n} />
+              <p class="mt-1 text-xs text-zinc-500">
+                {verified()
+                  ? "検証済み集計 (LNURL署名者・金額を照合)"
+                  : "未検証: 作成者の送金先が不明のため集計できません"}
+              </p>
             </div>
           </div>
           <ZapPanel
@@ -174,7 +180,7 @@ export default function GoalDetail() {
             relays={card()?.relays ?? []}
             goalMsats={card()?.goalMsats ?? 0n}
             onPaid={() => {
-              void refreshStats();
+              void refreshStats(profile());
             }}
           />
           <section>

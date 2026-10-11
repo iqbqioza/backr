@@ -1,11 +1,9 @@
 import {
   goalTitle,
-  tallyZaps,
   validateGoal9041,
   type Goal9041View,
   type NostrEventLike,
 } from "backr-nostr-nips";
-import { bolt11TagAmountMsats } from "backr-nostr-utils";
 import { fetchEvents } from "./relay";
 
 export interface GoalCardData extends Goal9041View {
@@ -42,30 +40,6 @@ export async function fetchReceipts(relayUrl: string, goalId: string): Promise<N
   return events.filter(
     (ev) => ev.kind === 9735 && ev.tags.some((t) => t[0] === "e" && t[1] === goalId),
   );
-}
-
-/** 集計: kind:9735 の #e=goalId。closedAt 以降は除外 */
-export async function fetchGoalTally(relayUrl: string, goalId: string, closedAt?: number) {
-  const receipts = await fetchReceipts(relayUrl, goalId);
-  return tallyZaps(receipts, goalId, closedAt, (ev) => bolt11TagAmountMsats(ev.tags));
-}
-
-/** 一覧カード分の集計を一括取得 (失敗分は 0) */
-export async function fetchCardTallies(
-  relayUrl: string,
-  cards: GoalCardData[],
-): Promise<Map<string, bigint>> {
-  const entries = await Promise.all(
-    cards.map(async (card) => {
-      try {
-        const tally = await fetchGoalTally(relayUrl, card.id, card.closedAt);
-        return [card.id, tally.totalMsats] as const;
-      } catch {
-        return [card.id, 0n] as const;
-      }
-    }),
-  );
-  return new Map(entries);
 }
 
 export interface ReportData {

@@ -41,6 +41,7 @@ describe("fetchLnurlPay", () => {
           minSendable: 1000,
           maxSendable: 1000000,
           allowsNostr: true,
+          nostrPubkey: "a".repeat(64),
         }),
       ),
     );
@@ -54,10 +55,19 @@ describe("fetchLnurlPay", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
-        jsonResponse({ tag: "payRequest", callback: "https://example.com/cb", minSendable: 1, maxSendable: 2, allowsNostr: false }),
+        jsonResponse({ tag: "payRequest", callback: "https://example.com/cb", minSendable: 1, maxSendable: 2, allowsNostr: false, nostrPubkey: "a".repeat(64) }),
       ),
     );
     await expect(fetchLnurlPay("https://example.com/x")).rejects.toThrow("Zap に対応していません");
+  });
+  it("rejects missing nostrPubkey", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({ tag: "payRequest", callback: "https://example.com/cb", minSendable: 1, maxSendable: 2, allowsNostr: true }),
+      ),
+    );
+    await expect(fetchLnurlPay("https://example.com/x")).rejects.toThrow("nostrPubkey");
   });
 });
 
