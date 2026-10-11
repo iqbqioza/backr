@@ -24,6 +24,7 @@ import {
   type ProfileView,
   type ReportData,
 } from "../lib/goals";
+import { mergeReports } from "../lib/reports";
 import { fetchSupporters, type Supporter } from "../lib/supporters";
 
 export default function GoalDetail() {
@@ -187,11 +188,16 @@ export default function GoalDetail() {
               relayUrl={relay()}
               goalId={card()?.id ?? ""}
               onPosted={(report) => {
-                setReports([...reports(), report].sort((a, b) => b.createdAt - a.createdAt));
+                setReports(mergeReports(reports(), [report]));
               }}
             />
           )}
-          <ReportList reports={reports()} />
+          <ReportList
+            reports={reports()}
+            relayUrl={relay()}
+            goalId={card()?.id ?? ""}
+            onChange={setReports}
+          />
           {isAuthor() && !deleted() && (
             <section class="rounded-lg border border-red-900 p-4">
               <h2 class="font-semibold text-red-300">このプロジェクトを削除する</h2>

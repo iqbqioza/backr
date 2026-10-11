@@ -70,6 +70,8 @@ export async function fetchCardTallies(
 
 export interface ReportData {
   id: string;
+  author: string;
+  identifier: string;
   title: string;
   createdAt: number;
   content: string;
@@ -81,8 +83,12 @@ export function toReportData(ev: NostrEventLike, goalId: string): ReportData | n
   if (ev.kind !== 30023) return null;
   const linked = ev.tags.some((t) => t[0] === "goal" && t[1] === goalId);
   if (!linked) return null;
+  const identifier = ev.tags.find((t) => t[0] === "d")?.[1] ?? "";
+  if (identifier.length === 0) return null;
   const report: ReportData = {
     id: ev.id,
+    author: ev.pubkey,
+    identifier,
     title: ev.tags.find((t) => t[0] === "title")?.[1] ?? "活動報告",
     createdAt: ev.created_at,
     content: ev.content,
@@ -92,7 +98,20 @@ export function toReportData(ev: NostrEventLike, goalId: string): ReportData | n
   return report;
 }
 
-/** 活動報告: kind:30023 のうち goal タグが goalId のもの */
+/** 同一 (author, d) は最新のみ残す (NIP-23 編集対応) */
+export function dedupeReports(reports: ReportData[]): ReportData[] {
+  const latest = new Map<string, ReportData>();
+  for (const report of reports) {
+    const key = `${report.author}:${report.identifier}`;
+    const current = latest.get(key);
+    if (current === undefined || report.createdAt > current.createdAt) {
+      latest.set(key, report);
+    }
+  }
+  return [...latest.values()].sort((a, b) => b.createdAt - a.createdAt);
+}
+
+/** 活動報告: kind:30023 のうち goal タグが goalId のもの (編集は最新のみ) */
 export async function fetchReports(relayUrl: string, goalId: string): Promise<ReportData[]> {
   const events = await fetchEvents([{ kinds: [30023], limit: 50 }], relayUrl);
   const reports: ReportData[] = [];
@@ -100,7 +119,7 @@ export async function fetchReports(relayUrl: string, goalId: string): Promise<Re
     const report = toReportData(ev, goalId);
     if (report !== null) reports.push(report);
   }
-  return reports.sort((a, b) => b.createdAt - a.createdAt);
+  return dedupeReports(reports);
 }
 
 export interface ProfileView {

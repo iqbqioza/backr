@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  dedupeReports,
   parseProfile,
   profilesByKey,
   sortGoalCards,
@@ -90,12 +91,32 @@ describe("toReportData", () => {
   it("extracts body and matches goal", () => {
     expect(toReportData(ev, goalId)).toEqual({
       id: ev.id,
+      author: ev.pubkey,
+      identifier: "backr-1",
       title: "進捗",
       createdAt: 100,
       content: "本文です。",
     });
     expect(toReportData(ev, "f".repeat(64))).toBeNull();
     expect(toReportData({ ...ev, kind: 1 }, goalId)).toBeNull();
+    expect(toReportData({ ...ev, tags: [["title", "x"]] }, goalId)).toBeNull();
+  });
+});
+
+describe("dedupeReports", () => {
+  it("keeps newest per author+identifier", () => {
+    const base = {
+      author: "c".repeat(64),
+      identifier: "backr-1",
+      title: "t",
+      content: "c",
+    };
+    const deduped = dedupeReports([
+      { ...base, id: "1".repeat(64), createdAt: 100 },
+      { ...base, id: "2".repeat(64), createdAt: 200 },
+      { ...base, id: "3".repeat(64), author: "d".repeat(64), createdAt: 50 },
+    ]);
+    expect(deduped.map((r) => r.id)).toEqual(["2".repeat(64), "3".repeat(64)]);
   });
 });
 
