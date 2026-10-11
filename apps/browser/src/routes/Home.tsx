@@ -1,35 +1,88 @@
 import { createSignal, onMount } from "solid-js";
 import GoalCard from "../components/GoalCard";
+import RelayBar from "../components/RelayBar";
+import { EmptyState, ErrorState, Loading } from "../components/States";
 import { DEFAULT_RELAY } from "../lib/const";
-import { fetchGoalCards, type GoalCardData } from "../lib/goals";
+import {
+  fetchCardTallies,
+  fetchGoalCards,
+  sortGoalCards,
+  type GoalCardData,
+  type SortMode,
+} from "../lib/goals";
+
+const TABS: { id: SortMode; label: string }[] = [
+  { id: "new", label: "新着" },
+  { id: "progress", label: "達成率順" },
+  { id: "deadline", label: "締切順" },
+];
 
 export default function Home() {
+  const [relay, setRelay] = createSignal(DEFAULT_RELAY);
   const [cards, setCards] = createSignal<GoalCardData[]>([]);
+  const [tallies, setTallies] = createSignal(new Map<string, bigint>());
+  const [mode, setMode] = createSignal<SortMode>("new");
   const [loading, setLoading] = createSignal(true);
   const [error, setError] = createSignal<string | null>(null);
 
-  onMount(() => {
-    fetchGoalCards(DEFAULT_RELAY)
-      .then(setCards)
+  const load = () => {
+    setLoading(true);
+    setError(null);
+    const url = relay();
+    fetchGoalCards(url)
+      .then((fetched) => {
+        setCards(fetched);
+        return fetchCardTallies(url, fetched);
+      })
+      .then(setTallies)
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : "取得に失敗しました");
       })
       .finally(() => {
         setLoading(false);
       });
-  });
+  };
+
+  onMount(load);
+
+  const sorted = () => sortGoalCards(cards(), tallies(), mode());
 
   return (
     <div>
       <h1 class="mb-4 text-2xl font-bold">プロジェクトを探す</h1>
-      {loading() && <p class="text-zinc-400">読み込み中…</p>}
-      {error() !== null && <p class="text-red-400">リレー取得失敗: {error()}</p>}
-      {!loading() && error() === null && cards().length === 0 && (
-        <p class="text-zinc-400">まだプロジェクトがありません。</p>
+      <RelayBar relay={relay()} onChange={setRelay} />
+      <div class="mb-4 flex gap-2">
+        {TABS.map((tab) => (
+          <button
+            type="button"
+            onClick={() => {
+              setMode(tab.id);
+            }}
+            class={`rounded-full border px-4 py-1 text-sm ${
+              mode() === tab.id
+                ? "border-amber-400 text-amber-300"
+                : "border-zinc-700 text-zinc-400 hover:text-zinc-100"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={load}
+          class="ml-auto rounded border border-zinc-700 px-3 py-1 text-sm text-zinc-400 hover:text-zinc-100"
+        >
+          更新
+        </button>
+      </div>
+      {loading() && <Loading />}
+      {error() !== null && !loading() && <ErrorState message={`リレー取得失敗: ${error()}`} onRetry={load} />}
+      {!loading() && error() === null && sorted().length === 0 && (
+        <EmptyState message="まだプロジェクトがありません。「作る」から最初の案件を公開しましょう。" />
       )}
       <div class="grid gap-4 md:grid-cols-2">
-        {cards().map((card) => (
-          <GoalCard card={card} />
+        {sorted().map((card) => (
+          <GoalCard card={card} raisedMsats={tallies().get(card.id) ?? 0n} />
         ))}
       </div>
     </div>
