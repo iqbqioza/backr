@@ -1,3 +1,4 @@
+export * from "./comment";
 export * from "./crypto";
 export * from "./deletion";
 export * from "./event";

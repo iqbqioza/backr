@@ -2,6 +2,7 @@ import { useParams } from "@solidjs/router";
 import { decodeNevent } from "backr-nostr-nips";
 import { formatSats, progressPercent, remainingLabel } from "backr-utils";
 import { createSignal, onMount } from "solid-js";
+import CommentSection from "../components/CommentSection";
 import CreatorCard from "../components/CreatorCard";
 import ProgressMeter from "../components/ProgressMeter";
 import RelayBar from "../components/RelayBar";
@@ -173,6 +174,7 @@ export default function GoalDetail() {
             <p class="whitespace-pre-wrap text-zinc-300">{card()?.description}</p>
           </section>
           <SupporterList supporters={supporters()} />
+          <CommentSection relayUrl={relay()} goalId={card()?.id ?? ""} goalAuthor={card()?.pubkey ?? ""} />
           <ReportList reports={reports()} />
           {isAuthor() && !deleted() && (
             <section class="rounded-lg border border-red-900 p-4">
