@@ -1,0 +1,11 @@
+{
+	"name": "backr-monorepo",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+	"remoteUser": "vscode",
+	"containerUser": "vscode",
+	"postCreateCommand": "npm --version",
+	"forwardPorts": [5173, 4173]
+}
+

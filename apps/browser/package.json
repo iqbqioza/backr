@@ -1,0 +1,29 @@
+{
+  "name": "backr-browser",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --passWithNoTests",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@solidjs/router": "1.0.0",
+    "backr-nostr-nips": "workspace:*",
+    "backr-nostr-utils": "workspace:*",
+    "backr-nostr-ws": "workspace:*",
+    "backr-utils": "workspace:*",
+    "solid-js": "1.9.17"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.2",
+    "vite": "7.3.7",
+    "vite-plugin-solid": "2.11.14",
+    "vitest": "5.0.3"
+  }
+}
