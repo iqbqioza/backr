@@ -115,6 +115,9 @@ describe("parseProfile", () => {
       image: "https://example.com/a.png",
       lud16: "alice@example.com",
     });
+    expect(
+      parseProfile("b".repeat(64), JSON.stringify({ name: "x", about: "自己紹介です" }))?.about,
+    ).toBe("自己紹介です");
   });
   it("falls back and rejects garbage", () => {
     expect(parseProfile("b".repeat(64), JSON.stringify({}))?.name).toBe("bbbbbbbbbbbb");

@@ -3,7 +3,6 @@ import { decodeNevent } from "backr-nostr-nips";
 import { formatSats, progressPercent, remainingLabel } from "backr-utils";
 import { createSignal, onMount } from "solid-js";
 import CommentSection from "../components/CommentSection";
-import CreatorCard from "../components/CreatorCard";
 import ReportForm from "../components/ReportForm";
 import ProgressMeter from "../components/ProgressMeter";
 import RelayBar from "../components/RelayBar";
@@ -41,7 +40,9 @@ export default function GoalDetail() {
   const [confirming, setConfirming] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
   const [deleted, setDeleted] = createSignal(false);
-  const [tab, setTab] = createSignal<"desc" | "supporters" | "comments" | "reports">("desc");
+  const [tab, setTab] = createSignal<"desc" | "supporters" | "comments" | "reports" | "owner">(
+    "desc",
+  );
   const [commentCount, setCommentCount] = createSignal(0);
 
   const load = () => {
@@ -153,6 +154,7 @@ export default function GoalDetail() {
                     ["supporters", `支援者 (${supporters().length})`],
                     ["comments", `コメント (${commentCount()})`],
                     ["reports", `活動報告 (${reports().length})`],
+                    ["owner", "プロジェクトオーナー"],
                   ] as const
                 ).map(([id, label]) => (
                   <button
@@ -203,6 +205,37 @@ export default function GoalDetail() {
                   />
                 </div>
               </div>
+              <div classList={{ hidden: tab() !== "owner" }}>
+                <div class="flex items-start gap-4 rounded-lg border border-zinc-800 bg-zinc-900 p-5">
+                  {profile()?.image !== undefined ? (
+                    <img
+                      src={profile()?.image}
+                      alt=""
+                      class="h-20 w-20 shrink-0 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span class="h-20 w-20 shrink-0 rounded-full bg-gradient-to-br from-zinc-500 to-zinc-700" />
+                  )}
+                  <div class="min-w-0">
+                    <p class="text-xl font-bold">{profile()?.name ?? "読み込み中…"}</p>
+                    {profile()?.about !== undefined && (
+                      <p class="mt-2 whitespace-pre-wrap break-words text-sm text-zinc-300">
+                        {profile()?.about}
+                      </p>
+                    )}
+                    <div class="mt-3 flex flex-wrap gap-2">
+                      {profile()?.lud16 !== undefined && (
+                        <span class="rounded bg-zinc-800 px-2 py-1 font-mono text-xs text-amber-300">
+                          {profile()?.lud16}
+                        </span>
+                      )}
+                      <span class="rounded bg-zinc-800 px-2 py-1 font-mono text-xs text-zinc-400">
+                        {card()?.pubkey.slice(0, 16)}…
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             <aside class="grid content-start gap-4 self-start lg:sticky lg:top-4">
               <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
@@ -238,7 +271,6 @@ export default function GoalDetail() {
                   void refreshStats(profile());
                 }}
               />
-              <CreatorCard profile={profile()} pubkey={card()?.pubkey ?? ""} />
               <button
                 type="button"
                 onClick={() => {

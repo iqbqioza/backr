@@ -102,6 +102,7 @@ export interface ProfileView {
   image?: string;
   lud16?: string;
   lud06?: string;
+  about?: string;
 }
 
 /** kind:0 content の JSON を表示用に整形 */
@@ -124,6 +125,7 @@ export function parseProfile(pubkey: string, content: string): ProfileView | nul
   if (typeof d["picture"] === "string" && d["picture"].length > 0) profile.image = d["picture"];
   if (typeof d["lud16"] === "string" && d["lud16"].length > 0) profile.lud16 = d["lud16"];
   if (typeof d["lud06"] === "string" && d["lud06"].length > 0) profile.lud06 = d["lud06"];
+  if (typeof d["about"] === "string" && d["about"].length > 0) profile.about = d["about"];
   return profile;
 }
 
