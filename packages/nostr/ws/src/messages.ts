@@ -1,4 +1,4 @@
-import { isNostrEventLike, type NostrEventLike } from "backr-nostr-nips";
+import { isNostrEventLike, normalizeEventLike, type NostrEventLike } from "backr-nostr-nips";
 
 export type { NostrEventLike };
 
@@ -40,7 +40,7 @@ export function parseRelayMessage(raw: string): RelayInbound | null {
   if (verb === "EVENT") {
     const [subId, event] = rest;
     if (typeof subId !== "string" || !isNostrEventLike(event)) return null;
-    return { type: "EVENT", subscriptionId: subId, event };
+    return { type: "EVENT", subscriptionId: subId, event: normalizeEventLike(event) };
   }
   if (verb === "EOSE") {
     const [subId] = rest;

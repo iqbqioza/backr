@@ -7,7 +7,7 @@ const BASE = {
   created_at: 1700000000,
   kind: 9041,
   content: "大阪で nostr ハッカソンを開きます。",
-  sig: "c".repeat(64),
+  sig: "c".repeat(128),
 };
 
 describe("validateGoal9041", () => {
@@ -27,6 +27,18 @@ describe("validateGoal9041", () => {
       expect(result.value.closedAt).toBe(1798767890);
       expect(result.value.relays).toEqual(["wss://relay.nostrfy.org"]);
     }
+  });
+  it("accepts uppercase hex sig (ingest normalization)", () => {
+    const result = validateGoal9041({
+      ...BASE,
+      sig: "C".repeat(128),
+      tags: [
+        ["relays", "wss://relay.nostrfy.org"],
+        ["amount", "10000000"],
+        ["summary", "sample page"],
+      ],
+    });
+    expect(result.ok).toBe(true);
   });
   it("rejects missing amount/relays and bad kind", () => {
     expect(validateGoal9041({ ...BASE, kind: 1, tags: [] }).ok).toBe(false);

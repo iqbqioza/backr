@@ -1,4 +1,4 @@
-import { isHex32, type NostrEventLike } from "./event";
+import { isHex32, normalizeEventLike, type NostrEventLike } from "./event";
 
 export interface Goal9041View {
   id: string;
@@ -35,8 +35,8 @@ export function validateGoal9041(input: unknown): GoalValidation {
   }
   const e = input as Record<string, unknown>;
   if (e["kind"] !== 9041) errors.push("kind must be 9041");
-  if (!isHex32(e["id"])) errors.push("invalid id");
-  if (!isHex32(e["pubkey"])) errors.push("invalid pubkey");
+  if (typeof e["id"] !== "string") errors.push("invalid id");
+  if (typeof e["pubkey"] !== "string") errors.push("invalid pubkey");
   if (typeof e["created_at"] !== "number" || !Number.isInteger(e["created_at"])) {
     errors.push("invalid created_at");
   }
@@ -48,10 +48,14 @@ export function validateGoal9041(input: unknown): GoalValidation {
       (t) => Array.isArray(t) && (t as unknown[]).every((x) => typeof x === "string"),
     );
   if (!tagsOk) errors.push("invalid tags");
-  if (!isHex32(e["sig"])) errors.push("invalid sig");
+  if (typeof e["sig"] !== "string") errors.push("invalid sig");
   if (errors.length > 0 || !tagsOk) return { ok: false, errors };
 
-  const ev = input as NostrEventLike;
+  const ev = normalizeEventLike(input as NostrEventLike);
+  if (!isHex32(ev.id)) errors.push("invalid id");
+  if (!isHex32(ev.pubkey)) errors.push("invalid pubkey");
+  if (!/^[0-9a-f]{128}$/.test(ev.sig)) errors.push("invalid sig");
+  if (errors.length > 0) return { ok: false, errors };
   const tags = ev.tags;
 
   let goalMsats = 0n;

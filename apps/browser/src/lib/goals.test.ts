@@ -12,7 +12,7 @@ const BASE = {
   created_at: 1700000000,
   kind: 9041,
   content: "本文です。",
-  sig: "c".repeat(64),
+  sig: "c".repeat(128),
 };
 
 describe("toGoalCard", () => {

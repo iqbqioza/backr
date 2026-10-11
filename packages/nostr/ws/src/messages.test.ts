@@ -53,4 +53,24 @@ describe("parseRelayMessage", () => {
     expect(parseRelayMessage(JSON.stringify(["EVENT", "s1", { kind: 1 }]))).toBeNull();
     expect(parseRelayMessage(JSON.stringify(["AUTH", "x"]))).toBeNull();
   });
+  it("normalizes uppercase hex", () => {
+    const upper = {
+      ...EVENT,
+      id: "A".repeat(64),
+      pubkey: "B".repeat(64),
+      sig: "C".repeat(128),
+      tags: [["e", "D".repeat(64)]],
+    };
+    expect(parseRelayMessage(JSON.stringify(["EVENT", "s1", upper]))).toEqual({
+      type: "EVENT",
+      subscriptionId: "s1",
+      event: {
+        ...upper,
+        id: "a".repeat(64),
+        pubkey: "b".repeat(64),
+        sig: "c".repeat(128),
+        tags: [["e", "d".repeat(64)]],
+      },
+    });
+  });
 });

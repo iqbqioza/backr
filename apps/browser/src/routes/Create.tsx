@@ -84,7 +84,7 @@ export default function Create() {
       setPreview(null);
       return;
     }
-    const check = validateGoal9041({ ...draft, id: "0".repeat(64), sig: "0".repeat(64) });
+    const check = validateGoal9041({ ...draft, id: "0".repeat(64), sig: "0".repeat(128) });
     if (!check.ok) {
       setErrors(check.errors);
       setUnsigned(null);

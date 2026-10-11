@@ -1,9 +1,8 @@
 import { hmac } from "@noble/hashes/hmac.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { hashes, schnorr } from "@noble/secp256k1";
-import { isHex32 } from "./event";
 import { bytesToHex, hexToBytes } from "./hex";
-import type { NostrEventLike } from "./event";
+import { isHex32, normalizeEventLike, type NostrEventLike } from "./event";
 
 // noble v3 は sync 署名用のハッシュ実装を外部注入する (公式の wiring 手順)
 hashes.sha256 = sha256;
@@ -58,8 +57,9 @@ export function signEvent(ev: UnsignedEvent, secretHex: string): NostrEventLike 
   }
 }
 
-/** id 再計算 + Schnorr 検証 */
-export function verifyEventSignature(ev: NostrEventLike): boolean {
+/** id 再計算 + Schnorr 検証 (大文字 hex は正規化して扱う) */
+export function verifyEventSignature(input: NostrEventLike): boolean {
+  const ev = normalizeEventLike(input);
   const recomputed = computeEventId(ev);
   if (recomputed === null || recomputed !== ev.id) return false;
   if (!/^[0-9a-f]{128}$/.test(ev.sig)) return false;
