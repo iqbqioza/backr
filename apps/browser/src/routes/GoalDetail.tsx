@@ -162,30 +162,32 @@ export default function GoalDetail() {
       )}
       {card() !== null && (
         <article>
-          {card()?.image !== undefined ? (
-            <img src={card()?.image} alt="" class="h-64 w-full rounded-xl object-cover" />
-          ) : (
-            <div class="flex h-64 w-full items-center justify-center rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 text-7xl">
-              ⚡
+          <div class="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900">
+            <div class="flex flex-wrap items-center gap-2 px-4 py-3">
+              <span
+                class={`rounded-full px-3 py-1 text-sm font-semibold ${
+                  status() === "achieved"
+                    ? "bg-amber-400 text-zinc-950"
+                    : status() === "active"
+                      ? "bg-green-900 text-green-200"
+                      : status() === "ending-soon"
+                        ? "bg-orange-900 text-orange-200"
+                        : "bg-zinc-700 text-zinc-300"
+                }`}
+              >
+                {GOAL_STATUS_LABEL[status()]}
+              </span>
+              <span class="text-sm text-zinc-400">{deadline()}</span>
             </div>
-          )}
-          <div class="mt-4 flex flex-wrap items-center gap-2">
-            <span
-              class={`rounded-full px-3 py-1 text-sm font-semibold ${
-                status() === "achieved"
-                  ? "bg-amber-400 text-zinc-950"
-                  : status() === "active"
-                    ? "bg-green-900 text-green-200"
-                    : status() === "ending-soon"
-                      ? "bg-orange-900 text-orange-200"
-                      : "bg-zinc-700 text-zinc-300"
-              }`}
-            >
-              {GOAL_STATUS_LABEL[status()]}
-            </span>
-            <span class="text-sm text-zinc-400">{deadline()}</span>
+            <h1 class="px-4 pb-3 text-2xl font-bold leading-tight md:text-3xl">{card()?.title}</h1>
+            {card()?.image !== undefined ? (
+              <img src={card()?.image} alt="" class="h-64 w-full object-cover" />
+            ) : (
+              <div class="flex h-64 w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-7xl">
+                ⚡
+              </div>
+            )}
           </div>
-          <h1 class="mt-2 text-2xl font-bold md:text-3xl">{card()?.title}</h1>
           <div class="mt-3 grid gap-8 lg:grid-cols-3">
             <div class="grid content-start gap-8 lg:col-span-2">
               <div class="sticky top-0 z-10 -mx-1 flex gap-1 overflow-x-auto border-b border-zinc-800 bg-zinc-950/95 px-1 py-1 backdrop-blur">
