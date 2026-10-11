@@ -183,3 +183,10 @@ export const GOAL_STATUS_LABEL: Record<GoalStatus, string> = {
   "ending-soon": "残りわずか",
   active: "募集中",
 };
+
+/** 達成までの残額。達成済み・目標不正は 0 */
+export function goalRemaining(raisedMsats: bigint, goalMsats: bigint): bigint {
+  if (goalMsats <= 0n) return 0n;
+  const diff = goalMsats - raisedMsats;
+  return diff > 0n ? diff : 0n;
+}

@@ -36,3 +36,13 @@ export function remainingLabel(nowSec: number, closedAtSec: number): string {
   if (diff >= 3600) return `残り${Math.floor(diff / 3600)}時間`;
   return `残り${Math.max(1, Math.floor(diff / 60))}分`;
 }
+
+/** 相対時刻 (〜前)。未来・現在は "たった今" */
+export function timeAgo(nowSec: number, atSec: number): string {
+  const diff = Math.floor(nowSec - atSec);
+  if (diff < 60) return "たった今";
+  if (diff < 3600) return `${Math.floor(diff / 60)}分前`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}時間前`;
+  if (diff < 86400 * 30) return `${Math.floor(diff / 86400)}日前`;
+  return new Date(atSec * 1000).toLocaleDateString("ja-JP");
+}

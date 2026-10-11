@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   dedupeReports,
+  goalRemaining,
   goalStatus,
   parseProfile,
   profilesByKey,
@@ -73,6 +74,14 @@ describe("goalStatus", () => {
     expect(goalStatus(500n, 1000n, 100, 100 + 86400)).toBe("ending-soon");
     expect(goalStatus(500n, 1000n, 100, undefined)).toBe("active");
     expect(goalStatus(0n, 0n, 100, undefined)).toBe("active");
+  });
+});
+
+describe("goalRemaining", () => {
+  it("returns remaining or zero", () => {
+    expect(goalRemaining(300n, 1000n)).toBe(700n);
+    expect(goalRemaining(1500n, 1000n)).toBe(0n);
+    expect(goalRemaining(0n, 0n)).toBe(0n);
   });
 });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatSats, msatsToSatsString, progressPercent, remainingLabel } from "./index";
+import { formatSats, msatsToSatsString, progressPercent, remainingLabel, timeAgo } from "./index";
 
 describe("msatsToSatsString", () => {
   it("formats exact sats", () => {
@@ -46,5 +46,16 @@ describe("remainingLabel", () => {
     expect(remainingLabel(0, 86400 * 3)).toBe("残り3日");
     expect(remainingLabel(0, 7200)).toBe("残り2時間");
     expect(remainingLabel(0, 90)).toBe("残り1分");
+  });
+});
+
+describe("timeAgo", () => {
+  it("formats relative time", () => {
+    expect(timeAgo(100, 100)).toBe("たった今");
+    expect(timeAgo(100, 90)).toBe("たった今");
+    expect(timeAgo(200, 100)).toBe("1分前");
+    expect(timeAgo(3700, 100)).toBe("1時間前");
+    expect(timeAgo(7300, 100)).toBe("2時間前");
+    expect(timeAgo(86400 * 5, 0)).toBe("5日前");
   });
 });

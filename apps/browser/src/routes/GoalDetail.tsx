@@ -1,6 +1,6 @@
 import { useParams } from "@solidjs/router";
 import { decodeNevent, encodeNevent } from "backr-nostr-nips";
-import { formatSats, progressPercent, remainingLabel } from "backr-utils";
+import { formatSats, progressPercent, remainingLabel, timeAgo } from "backr-utils";
 import { createSignal, onMount } from "solid-js";
 import CommentSection from "../components/CommentSection";
 import ReportForm from "../components/ReportForm";
@@ -19,12 +19,15 @@ import {
   fetchProfile,
   fetchProfiles,
   fetchReports,
+  goalRemaining,
   goalStatus,
   GOAL_STATUS_LABEL,
   type GoalCardData,
   type ProfileView,
   type ReportData,
 } from "../lib/goals";
+import { buildActivityFeed, recentSupporterCount } from "../lib/activity";
+import type { CommentView } from "../lib/comments";
 import { mergeReports } from "../lib/reports";
 import { fetchGoalZapData, type Supporter } from "../lib/supporters";
 
@@ -35,6 +38,7 @@ export default function GoalDetail() {
   const [raised, setRaised] = createSignal(0n);
   const [supporters, setSupporters] = createSignal<Supporter[]>([]);
   const [verified, setVerified] = createSignal(false);
+  const [allComments, setAllComments] = createSignal<CommentView[]>([]);
   const [supporterProfiles, setSupporterProfiles] = createSignal(new Map<string, ProfileView>());
   const [reports, setReports] = createSignal<ReportData[]>([]);
   const [profile, setProfile] = createSignal<ProfileView | null>(null);
@@ -109,6 +113,10 @@ export default function GoalDetail() {
 
   const status = () =>
     goalStatus(raised(), card()?.goalMsats ?? 0n, Math.floor(Date.now() / 1000), card()?.closedAt);
+
+  const feed = () => buildActivityFeed(supporters(), allComments(), reports());
+  const recentCount = () => recentSupporterCount(supporters(), Math.floor(Date.now() / 1000));
+  const remaining = () => goalRemaining(raised(), card()?.goalMsats ?? 0n);
 
   const shareNevent = () => {
     const id = card()?.id ?? "";
@@ -216,6 +224,7 @@ export default function GoalDetail() {
                   goalId={card()?.id ?? ""}
                   goalAuthor={card()?.pubkey ?? ""}
                   onCount={setCommentCount}
+                  onComments={setAllComments}
                 />
               </div>
               <div classList={{ hidden: tab() !== "reports" }}>
@@ -279,6 +288,11 @@ export default function GoalDetail() {
                 </div>
                 <p class="mt-2 text-lg font-semibold">{formatSats(raised())}</p>
                 <p class="text-sm text-zinc-400">目標 {formatSats(card()?.goalMsats ?? 0n)}</p>
+                {remaining() > 0n && (
+                  <p class="mt-1 text-sm font-semibold text-amber-300">
+                    あと {formatSats(remaining())} で達成！
+                  </p>
+                )}
                 <div class="mt-3 flex justify-between border-t border-zinc-800 pt-3 text-sm">
                   <span class="text-zinc-400">支援者</span>
                   <span class="font-semibold">{supporters().length}人</span>
@@ -299,6 +313,7 @@ export default function GoalDetail() {
                 profile={profile()}
                 relays={card()?.relays ?? []}
                 goalMsats={card()?.goalMsats ?? 0n}
+                goalTitle={card()?.title ?? ""}
                 ended={card()?.closedAt !== undefined && Math.floor(Date.now() / 1000) >= (card()?.closedAt ?? 0)}
                 onPaid={() => {
                   void refreshStats(profile());
@@ -323,7 +338,38 @@ export default function GoalDetail() {
                     ? `${supporters().length}人が支援しています`
                     : "最初の支援者になりましょう"}
                 </p>
+                {recentCount() > 0 && (
+                  <p class="mt-1 text-xs font-semibold text-amber-300">
+                    直近24時間で{recentCount()}人が支援！
+                  </p>
+                )}
               </div>
+              {feed().length > 0 && (
+                <section class="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+                  <h2 class="mb-2 font-semibold">新着アクティビティ</h2>
+                  <ul class="grid gap-2">
+                    {feed().map((item) => (
+                      <li class="flex items-center gap-2 text-sm">
+                        <span
+                          class={`shrink-0 rounded px-1.5 py-0.5 text-xs ${
+                            item.kind === "zap"
+                              ? "bg-amber-400/20 text-amber-300"
+                              : item.kind === "comment"
+                                ? "bg-zinc-700 text-zinc-300"
+                                : "bg-green-900 text-green-200"
+                          }`}
+                        >
+                          {item.kind === "zap" ? "支援" : item.kind === "comment" ? "コメント" : "報告"}
+                        </span>
+                        <span class="truncate text-zinc-300">{item.text}</span>
+                        <span class="ml-auto shrink-0 text-xs text-zinc-500">
+                          {timeAgo(Math.floor(Date.now() / 1000), item.at)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
               <div class="grid gap-2">
                 <button
                   type="button"

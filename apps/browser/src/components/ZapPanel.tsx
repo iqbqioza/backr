@@ -22,6 +22,7 @@ export default function ZapPanel(props: {
   profile: ProfileView | null;
   relays: string[];
   goalMsats: bigint;
+  goalTitle: string;
   ended: boolean;
   onPaid: () => void;
 }) {
@@ -33,6 +34,7 @@ export default function ZapPanel(props: {
   const [error, setError] = createSignal<string | null>(null);
   const [invoice, setInvoice] = createSignal<string | null>(null);
   const [copied, setCopied] = createSignal(false);
+  const [shared, setShared] = createSignal(false);
 
   const selected = () => {
     const parsed = Number(custom().trim());
@@ -107,6 +109,24 @@ export default function ZapPanel(props: {
     setPhase("idle");
     setInvoice(null);
     setCopied(false);
+    setShared(false);
+  };
+
+  const onShare = () => {
+    if (typeof navigator === "undefined" || navigator.clipboard === undefined) {
+      setError("コピーできませんでした");
+      return;
+    }
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    const text = `『${props.goalTitle}』に${formatSats(BigInt(selected()) * 1000n)}支援しました！ ${url}`;
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        setShared(true);
+      })
+      .catch(() => {
+        setError("コピーできませんでした");
+      });
   };
 
   return (
@@ -125,13 +145,20 @@ export default function ZapPanel(props: {
           <p class="mt-2 break-all rounded bg-zinc-950 p-3 font-mono text-xs text-zinc-300">
             {invoice()}
           </p>
-          <div class="mt-3 flex gap-2">
+          <div class="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={onCopy}
               class="rounded border border-zinc-600 px-3 py-1.5 text-sm hover:border-zinc-300"
             >
               {copied() ? "コピーしました" : "インボイスをコピー"}
+            </button>
+            <button
+              type="button"
+              onClick={onShare}
+              class="rounded border border-zinc-600 px-3 py-1.5 text-sm hover:border-zinc-300"
+            >
+              {shared() ? "シェア文をコピーしました" : "応援をシェアする"}
             </button>
             <button
               type="button"

@@ -122,6 +122,7 @@ export default function CommentSection(props: {
   goalId: string;
   goalAuthor: string;
   onCount?: (count: number) => void;
+  onComments?: (comments: CommentView[]) => void;
 }) {
   const [comments, setComments] = createSignal<CommentView[]>([]);
   const [profiles, setProfiles] = createSignal(new Map<string, ProfileView>());
@@ -147,6 +148,7 @@ export default function CommentSection(props: {
       .then((fetched) => {
         setComments(fetched);
         props.onCount?.(fetched.length);
+        props.onComments?.(fetched);
         return fetchProfiles(
           props.relayUrl,
           fetched.map((c) => c.pubkey),
@@ -177,6 +179,7 @@ export default function CommentSection(props: {
         const next = [...comments(), view].sort((a, b) => a.createdAt - b.createdAt);
         setComments(next);
         props.onCount?.(next.length);
+        props.onComments?.(next);
         setBody("");
         setReplyTo(null);
       })
@@ -202,6 +205,7 @@ export default function CommentSection(props: {
         const next = comments().filter((c) => c.id !== comment.id);
         setComments(next);
         props.onCount?.(next.length);
+        props.onComments?.(next);
         setConfirming(null);
       })
       .catch((err: unknown) => {
