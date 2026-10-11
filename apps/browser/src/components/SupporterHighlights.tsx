@@ -17,7 +17,7 @@ export default function SupporterHighlights(props: {
     <div class="mb-4 grid gap-3 sm:grid-cols-2">
       {first() !== null && (
         <div class="rounded-lg border border-amber-600/50 bg-amber-400/10 p-4">
-          <p class="text-xs font-semibold tracking-wider text-amber-300">First supporter</p>
+          <p class="text-xs font-semibold tracking-wider text-amber-300">First backer</p>
           <div class="mt-2 flex items-center gap-2">
             {(() => {
               const s = first();
@@ -40,7 +40,7 @@ export default function SupporterHighlights(props: {
       )}
       {top().length > 0 && (
         <div class="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-          <p class="text-xs font-semibold tracking-wider text-zinc-400">Top backers</p>
+          <p class="text-xs font-semibold tracking-wider text-zinc-400">Top 3</p>
           <ol class="mt-2 grid gap-1">
             {top().map((supporter, index) => (
               <li class="flex items-center gap-2 text-sm">

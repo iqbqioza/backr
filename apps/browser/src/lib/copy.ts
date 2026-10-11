@@ -96,11 +96,11 @@ export const GOAL_DETAIL = {
 } as const;
 
 export const TABS = {
-  desc: "About project",
-  supporters: (count: number) => `Supporters (${count})`,
+  desc: "About",
+  supporters: (count: number) => `Backers (${count})`,
   comments: (count: number) => `Comments (${count})`,
   reports: (count: number) => `Updates (${count})`,
-  owner: "Project owner",
+  owner: "Owner",
 } as const;
 
 export const ZAP = {
@@ -146,14 +146,14 @@ export const ZAP = {
 } as const;
 
 export const SUPPORTERS = {
-  title: (count: number) => `Comments (${count})`,
-  empty: "No supporters yet. Be the first!",
-  section: (count: number) => `Supporters (${count})`,
+  title: (count: number) => `Backers (${count})`,
+  empty: "No backers yet. Be the first!",
+  section: (count: number) => `Backers (${count})`,
 } as const;
 
 export const SUPPORTER_HIGHLIGHTS = {
-  first: "First supporter",
-  top: "Top 3 backers",
+  first: "First backer",
+  top: "Top 3",
 } as const;
 
 export const ACTIVITY = {

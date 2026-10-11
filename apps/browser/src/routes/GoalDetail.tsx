@@ -197,11 +197,11 @@ export default function GoalDetail() {
               <div class="sticky top-0 z-10 -mx-1 flex gap-1 overflow-x-auto border-b border-zinc-800 bg-zinc-950/95 px-1 py-1 backdrop-blur">
                 {(
                   [
-                    ["desc", "Description"],
-                    ["supporters", `Supporters (${supporters().length})`],
+                    ["desc", "About"],
+                    ["supporters", `Backers (${supporters().length})`],
                     ["comments", `Comments (${commentCount()})`],
                     ["reports", `Updates (${reports().length})`],
-                    ["owner", "Project owner"],
+                    ["owner", "Owner"],
                   ] as const
                 ).map(([id, label]) => (
                   <button
@@ -304,7 +304,7 @@ export default function GoalDetail() {
                   </p>
                 )}
                 <div class="mt-3 flex justify-between border-t border-zinc-800 pt-3 text-sm">
-                  <span class="text-zinc-400">Supporters</span>
+                  <span class="text-zinc-400">Backers</span>
                   <span class="font-semibold">{supporters().length}</span>
                 </div>
                 <div class="flex justify-between text-sm">
@@ -346,7 +346,7 @@ export default function GoalDetail() {
                 <p class="text-sm text-zinc-300">
                   {supporters().length > 0
                     ? `${supporters().length} supporters`
-                    : "Be the first supporter"}
+                    : "Be the first backer"}
                 </p>
                 {recentCount() > 0 && (
                   <p class="mt-1 text-xs font-semibold text-amber-300">
