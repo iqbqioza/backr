@@ -22,6 +22,7 @@ export default function ZapPanel(props: {
   profile: ProfileView | null;
   relays: string[];
   goalMsats: bigint;
+  ended: boolean;
   onPaid: () => void;
 }) {
   const [sats, setSats] = createSignal(210);
@@ -111,7 +112,11 @@ export default function ZapPanel(props: {
   return (
     <section class="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
       <h2 class="font-semibold">このプロジェクトを支援する</h2>
-      {phase() === "invoice" && invoice() !== null ? (
+      {props.ended ? (
+        <p class="mt-2 text-sm text-zinc-400">
+          募集は終了しました。集計後の支援はメーターに反映されません。
+        </p>
+      ) : phase() === "invoice" && invoice() !== null ? (
         <div>
           <p class="mt-2 text-sm text-zinc-300">
             {formatSats(BigInt(selected()) * 1000n)} のインボイスを発行しました。

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   dedupeReports,
+  goalStatus,
   parseProfile,
   profilesByKey,
   toGoalCard,
@@ -62,6 +63,16 @@ describe("toReportData", () => {
     expect(toReportData(ev, "f".repeat(64))).toBeNull();
     expect(toReportData({ ...ev, kind: 1 }, goalId)).toBeNull();
     expect(toReportData({ ...ev, tags: [["title", "x"]] }, goalId)).toBeNull();
+  });
+});
+
+describe("goalStatus", () => {
+  it("prioritizes achieved over ended", () => {
+    expect(goalStatus(2000n, 1000n, 9999, 100)).toBe("achieved");
+    expect(goalStatus(500n, 1000n, 9999, 100)).toBe("ended");
+    expect(goalStatus(500n, 1000n, 100, 100 + 86400)).toBe("ending-soon");
+    expect(goalStatus(500n, 1000n, 100, undefined)).toBe("active");
+    expect(goalStatus(0n, 0n, 100, undefined)).toBe("active");
   });
 });
 

@@ -159,3 +159,27 @@ export async function fetchProfiles(
   const events = await fetchEvents([{ kinds: [0], authors: unique, limit: unique.length }], relayUrl);
   return profilesByKey(events);
 }
+
+export type GoalStatus = "achieved" | "ended" | "ending-soon" | "active";
+
+/** ステータス判定 (純粋関数): 達成 > 終了 > 残り3日以内 > 募集中 */
+export function goalStatus(
+  raisedMsats: bigint,
+  goalMsats: bigint,
+  nowSec: number,
+  closedAt?: number,
+): GoalStatus {
+  const ended = closedAt !== undefined && nowSec >= closedAt;
+  const pct = goalMsats > 0n ? Number(raisedMsats) / Number(goalMsats) : 0;
+  if (pct >= 1) return "achieved";
+  if (ended) return "ended";
+  if (closedAt !== undefined && closedAt - nowSec < 3 * 86400) return "ending-soon";
+  return "active";
+}
+
+export const GOAL_STATUS_LABEL: Record<GoalStatus, string> = {
+  achieved: "達成！",
+  ended: "終了",
+  "ending-soon": "残りわずか",
+  active: "募集中",
+};

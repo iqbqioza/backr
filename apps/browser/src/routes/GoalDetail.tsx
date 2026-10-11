@@ -1,9 +1,10 @@
 import { useParams } from "@solidjs/router";
-import { decodeNevent } from "backr-nostr-nips";
+import { decodeNevent, encodeNevent } from "backr-nostr-nips";
 import { formatSats, progressPercent, remainingLabel } from "backr-utils";
 import { createSignal, onMount } from "solid-js";
 import CommentSection from "../components/CommentSection";
 import ReportForm from "../components/ReportForm";
+import { avatarImage } from "../components/SupporterList";
 import ProgressMeter from "../components/ProgressMeter";
 import RelayBar from "../components/RelayBar";
 import ReportList from "../components/ReportList";
@@ -18,6 +19,8 @@ import {
   fetchProfile,
   fetchProfiles,
   fetchReports,
+  goalStatus,
+  GOAL_STATUS_LABEL,
   type GoalCardData,
   type ProfileView,
   type ReportData,
@@ -104,6 +107,15 @@ export default function GoalDetail() {
     return remainingLabel(Math.floor(Date.now() / 1000), closedAt);
   };
 
+  const status = () =>
+    goalStatus(raised(), card()?.goalMsats ?? 0n, Math.floor(Date.now() / 1000), card()?.closedAt);
+
+  const shareNevent = () => {
+    const id = card()?.id ?? "";
+    if (id.length === 0) return "";
+    return encodeNevent({ id, relays: card()?.relays.slice(0, 3) ?? [] }) ?? "";
+  };
+
   const isAuthor = () => {
     const s = getSession();
     return s !== null && s.method !== "readonly" && s.pubkey === card()?.pubkey;
@@ -148,10 +160,26 @@ export default function GoalDetail() {
               ⚡
             </div>
           )}
-          <h1 class="mt-4 text-2xl font-bold md:text-3xl">{card()?.title}</h1>
+          <div class="mt-4 flex flex-wrap items-center gap-2">
+            <span
+              class={`rounded-full px-3 py-1 text-sm font-semibold ${
+                status() === "achieved"
+                  ? "bg-amber-400 text-zinc-950"
+                  : status() === "active"
+                    ? "bg-green-900 text-green-200"
+                    : status() === "ending-soon"
+                      ? "bg-orange-900 text-orange-200"
+                      : "bg-zinc-700 text-zinc-300"
+              }`}
+            >
+              {GOAL_STATUS_LABEL[status()]}
+            </span>
+            <span class="text-sm text-zinc-400">{deadline()}</span>
+          </div>
+          <h1 class="mt-2 text-2xl font-bold md:text-3xl">{card()?.title}</h1>
           <div class="mt-3 grid gap-8 lg:grid-cols-3">
             <div class="grid content-start gap-8 lg:col-span-2">
-              <div class="flex gap-1 overflow-x-auto border-b border-zinc-800">
+              <div class="sticky top-0 z-10 -mx-1 flex gap-1 overflow-x-auto border-b border-zinc-800 bg-zinc-950/95 px-1 py-1 backdrop-blur">
                 {(
                   [
                     ["desc", "説明"],
@@ -271,21 +299,55 @@ export default function GoalDetail() {
                 profile={profile()}
                 relays={card()?.relays ?? []}
                 goalMsats={card()?.goalMsats ?? 0n}
+                ended={card()?.closedAt !== undefined && Math.floor(Date.now() / 1000) >= (card()?.closedAt ?? 0)}
                 onPaid={() => {
                   void refreshStats(profile());
                 }}
               />
-              <button
-                type="button"
-                onClick={() => {
-                  if (typeof navigator !== "undefined" && navigator.clipboard !== undefined) {
-                    void navigator.clipboard.writeText(window.location.href);
-                  }
-                }}
-                class="rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-300 hover:border-zinc-500"
-              >
-                このページのURLをコピー
-              </button>
+              <div class="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+                <div class="flex -space-x-2">
+                  {supporters().slice(0, 5).map((s) =>
+                    avatarImage(supporterProfiles(), s.pubkey) !== undefined ? (
+                      <img
+                        src={avatarImage(supporterProfiles(), s.pubkey)}
+                        alt=""
+                        class="h-8 w-8 rounded-full border-2 border-zinc-900 object-cover"
+                      />
+                    ) : (
+                      <span class="h-8 w-8 rounded-full border-2 border-zinc-900 bg-gradient-to-br from-amber-400 to-orange-600" />
+                    ),
+                  )}
+                </div>
+                <p class="text-sm text-zinc-300">
+                  {supporters().length > 0
+                    ? `${supporters().length}人が支援しています`
+                    : "最初の支援者になりましょう"}
+                </p>
+              </div>
+              <div class="grid gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof navigator !== "undefined" && navigator.clipboard !== undefined) {
+                      void navigator.clipboard.writeText(window.location.href);
+                    }
+                  }}
+                  class="rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-300 hover:border-zinc-500"
+                >
+                  このページのURLをコピー
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof navigator !== "undefined" && navigator.clipboard !== undefined) {
+                      void navigator.clipboard.writeText(`nostr:${shareNevent()}`);
+                    }
+                  }}
+                  class="rounded-lg border border-zinc-700 px-4 py-2 font-mono text-xs text-zinc-400 hover:border-zinc-500"
+                >
+                  neventをコピー
+                </button>
+              </div>
               {isAuthor() && !deleted() && (
                 <section class="rounded-lg border border-red-900 p-4">
                   <h2 class="font-semibold text-red-300">このプロジェクトを削除する</h2>
