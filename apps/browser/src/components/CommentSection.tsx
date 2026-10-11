@@ -62,7 +62,7 @@ function CommentRow(props: {
         <p class="truncate text-sm font-medium">{displayName(props.profiles, comment().pubkey)}</p>
         {props.node.depth > 1 && (
           <span class="rounded bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-400">
-            返信 L{props.node.depth}
+            Reply L{props.node.depth}
           </span>
         )}
         <span class="ml-auto flex shrink-0 items-center gap-2">
@@ -72,7 +72,7 @@ function CommentRow(props: {
               onClick={() => props.onReply(comment())}
               class="text-xs text-zinc-400 hover:text-zinc-100"
             >
-              {props.replying ? "返信中" : "Reply"}
+              {props.replying ? "Replying…" : "Reply"}
             </button>
           )}
           {props.isMine(comment()) &&
@@ -84,7 +84,7 @@ function CommentRow(props: {
                   disabled={props.working}
                   class="rounded bg-red-600 px-2 py-0.5 font-semibold text-white disabled:opacity-50"
                 >
-                  削除
+                  Delete
                 </button>
                 <button
                   type="button"
@@ -100,7 +100,7 @@ function CommentRow(props: {
                 onClick={() => props.onConfirm(comment().id)}
                 class="text-xs text-red-400 hover:text-red-300"
               >
-                削除
+                Delete
               </button>
             ))}
         </span>
@@ -108,7 +108,7 @@ function CommentRow(props: {
       {props.collapsed ? (
         <p class="mt-1 truncate text-sm text-zinc-500">
           {excerpt()}
-          {replies() > 0 && <span class="ml-2 text-xs">({replies()}件の返信)</span>}
+          {replies() > 0 && <span class="ml-2 text-xs">({replies()} replies)</span>}
         </p>
       ) : (
         <p class="mt-1 whitespace-pre-wrap break-words text-sm text-zinc-200">{comment().content}</p>
@@ -246,7 +246,7 @@ function ReplyForm(props: {
           disabled={props.posting}
           class="shrink-0 rounded bg-amber-400 px-3 py-1.5 text-sm font-semibold text-zinc-950 disabled:opacity-50"
         >
-          {props.posting ? "投稿中…" : props.submitLabel}
+          {props.posting ? "Posting…" : props.submitLabel}
         </button>
         {props.onCancel !== null && (
           <button
@@ -254,7 +254,7 @@ function ReplyForm(props: {
             onClick={props.onCancel}
             class="shrink-0 rounded border border-zinc-700 px-3 py-1.5 text-sm"
           >
-            やめる
+            Cancel
           </button>
         )}
       </div>
@@ -267,7 +267,7 @@ function ReplyForm(props: {
 
   return (
     <section>
-      {loading() && <p class="text-zinc-400">読み込み中…</p>}
+      {loading() && <p class="text-zinc-400">Loading…</p>}
       <ul class="grid gap-2 border-l-2 border-zinc-800 pl-2">
         {rows().map((node) => (
           <>
@@ -290,7 +290,7 @@ function ReplyForm(props: {
                   body={body()}
                   posting={posting()}
                   submitLabel="Reply"
-                  placeholder={`${displayName(profiles(), node.comment.pubkey)} への返信`}
+                  placeholder={`Replying to ${displayName(profiles(), node.comment.pubkey)}`}
                   indentRem={node.depth * 1.5}
                   onBody={setBody}
                   onSubmit={() => onPost(node.comment)}
@@ -308,7 +308,7 @@ function ReplyForm(props: {
           <ReplyForm
             body={body()}
             posting={posting()}
-            submitLabel="投稿"
+            submitLabel="Post"
             placeholder="Write a comment (plain text)"
             indentRem={0}
             onBody={(value) => {

@@ -41,7 +41,7 @@ export default function ReportForm(props: {
       <h3 class="mb-2 font-medium">Write an update</h3>
       <input
         class="w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm"
-        placeholder="タイトル"
+        placeholder={REPORTS.titlePlaceholder}
         value={title()}
         onInput={(e) => {
           setTitle(e.currentTarget.value);

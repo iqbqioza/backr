@@ -178,10 +178,10 @@ export function goalStatus(
 }
 
 export const GOAL_STATUS_LABEL: Record<GoalStatus, string> = {
-  achieved: "達成！",
-  ended: "終了",
-  "ending-soon": "残りわずか",
-  active: "募集中",
+  achieved: "Goal reached!",
+  ended: "Closed",
+  "ending-soon": "Almost there",
+  active: "Funding now",
 };
 
 /** 達成までの残額。達成済み・目標不正は 0 */

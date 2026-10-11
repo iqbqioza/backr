@@ -143,7 +143,7 @@ export default function Create() {
         <div class="grid content-start gap-3">
           {session() === null ? (
             <label class="text-sm">
-              作成者 (npub / hex)
+              Creator (npub / hex)
               <input
                 class={input}
                 placeholder="npub1…"
@@ -155,7 +155,7 @@ export default function Create() {
             </label>
           ) : (
             <p class="rounded border border-zinc-700 p-3 font-mono text-sm text-zinc-300">
-              作成者: {shortKey(session()?.pubkey ?? "")}
+              Creator: {shortKey(session()?.pubkey ?? "")}
             </p>
           )}
           <label class="text-sm">
@@ -207,7 +207,7 @@ export default function Create() {
             </label>
           </div>
           <label class="text-sm">
-            画像 URL (任意)
+            Image URL (optional)
             <input
               class={input}
               placeholder="https://…"
@@ -233,7 +233,7 @@ export default function Create() {
           )}
         </div>
         <div>
-          <h2 class="mb-2 font-semibold">プレビュー</h2>
+          <h2 class="mb-2 font-semibold">Preview</h2>
           <div class="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
             {image().trim().length > 0 ? (
               <img src={image().trim()} alt="" class={`mb-3 w-full rounded object-cover ${OGP_ASPECT_CLASS}`} />
@@ -250,7 +250,7 @@ export default function Create() {
                 <Markdown source={description()} />
               </div>
             ) : (
-              <p class="mt-1 text-sm text-zinc-400">説明未入力</p>
+              <p class="mt-1 text-sm text-zinc-400">No description</p>
             )}
             <p class="mt-3 text-sm text-zinc-400">
               Goal: {goalMsats() === null ? "—" : formatSats(goalMsats() ?? 0n)}
@@ -273,7 +273,7 @@ export default function Create() {
           )}
           {published() !== null && (
             <p class="mt-3 rounded border border-green-800 bg-green-950/40 p-3 text-sm text-green-300">
-              Published! <a class="underline" href={`/g/${published()}`}>詳細ページを開く</a>
+              Published! <a class="underline" href={`/g/${published()}`}>Open project page</a>
             </p>
           )}
         </div>

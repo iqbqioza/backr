@@ -139,7 +139,7 @@ export default function ZapPanel(props: {
       ) : phase() === "invoice" && invoice() !== null ? (
         <div>
           <p class="mt-2 text-sm text-zinc-300">
-            {formatSats(BigInt(selected()) * 1000n)} のインボイスを発行しました。
+            {formatSats(BigInt(selected()) * 1000n)} invoice issued. 
             Please pay with your wallet.
           </p>
           <p class="mt-2 break-all rounded bg-zinc-950 p-3 font-mono text-xs text-zinc-300">
@@ -194,7 +194,7 @@ export default function ZapPanel(props: {
             <input
               class="w-32 rounded border border-zinc-700 bg-zinc-950 px-3 py-1 text-sm"
               inputMode="numeric"
-              placeholder="金額入力"
+              placeholder="Custom amount"
               value={custom()}
               onInput={(e) => {
                 setCustom(e.currentTarget.value);
@@ -203,7 +203,7 @@ export default function ZapPanel(props: {
           </div>
           <input
             class="mt-2 w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm"
-            placeholder="応援コメント (任意)"
+            placeholder="Support message (optional)"
             value={comment()}
             onInput={(e) => {
               setComment(e.currentTarget.value);

@@ -160,7 +160,7 @@ export default function GoalDetail() {
       {loading() && <Loading />}
       {error() !== null && !loading() && <ErrorState message={error() ?? ""} onRetry={load} />}
       {!loading() && error() === null && card() === null && (
-        <EmptyState message="Project not found。" />
+        <EmptyState message="Project not found." />
       )}
       {card() !== null && (
         <article>
@@ -197,10 +197,10 @@ export default function GoalDetail() {
               <div class="sticky top-0 z-10 -mx-1 flex gap-1 overflow-x-auto border-b border-zinc-800 bg-zinc-950/95 px-1 py-1 backdrop-blur">
                 {(
                   [
-                    ["desc", "説明"],
-                    ["supporters", `supporters者 (${supporters().length})`],
-                    ["comments", `comment (${commentCount()})`],
-                    ["reports", `活動update (${reports().length})`],
+                    ["desc", "Description"],
+                    ["supporters", `Supporters (${supporters().length})`],
+                    ["comments", `Comments (${commentCount()})`],
+                    ["reports", `Updates (${reports().length})`],
                     ["owner", "Project owner"],
                   ] as const
                 ).map(([id, label]) => (
@@ -304,8 +304,8 @@ export default function GoalDetail() {
                   </p>
                 )}
                 <div class="mt-3 flex justify-between border-t border-zinc-800 pt-3 text-sm">
-                  <span class="text-zinc-400">supporters者</span>
-                  <span class="font-semibold">{supporters().length}人</span>
+                  <span class="text-zinc-400">Supporters</span>
+                  <span class="font-semibold">{supporters().length}</span>
                 </div>
                 <div class="flex justify-between text-sm">
                   <span class="text-zinc-400">Time left</span>
@@ -356,7 +356,7 @@ export default function GoalDetail() {
               </div>
               {feed().length > 0 && (
                 <section class="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-                  <h2 class="mb-2 font-semibold">新着アクティビティ</h2>
+                  <h2 class="mb-2 font-semibold">Recent activity</h2>
                   <ul class="grid gap-2">
                     {feed().map((item) => (
                       <li class="flex items-center gap-2 text-sm">
@@ -406,7 +406,7 @@ export default function GoalDetail() {
               </div>
               {isAuthor() && !deleted() && (
                 <section class="rounded-lg border border-red-900 p-4">
-                  <h2 class="font-semibold text-red-300">このプロジェクトをDelete</h2>
+                  <h2 class="font-semibold text-red-300">Delete this project</h2>
                   {!confirming() ? (
                     <button
                       type="button"
@@ -419,7 +419,7 @@ export default function GoalDetail() {
                     </button>
                   ) : (
                     <div class="mt-2 flex items-center gap-2">
-                      <p class="text-sm text-zinc-300">本当に削除しますか?</p>
+                      <p class="text-sm text-zinc-300">Delete this project?</p>
                       <button
                         type="button"
                         onClick={onDelete}
@@ -435,7 +435,7 @@ export default function GoalDetail() {
                         }}
                         class="rounded border border-zinc-700 px-3 py-1 text-sm"
                       >
-                        やめる
+                        Cancel
                       </button>
                     </div>
                   )}

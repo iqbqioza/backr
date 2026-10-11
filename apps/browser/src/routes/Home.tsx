@@ -92,7 +92,7 @@ export default function Home() {
                   </div>
                 )}
                 <div class="p-6 md:col-span-2">
-                  <p class="text-xs font-semibold tracking-wider text-amber-300">注目のプロジェクト</p>
+                  <p class="text-xs font-semibold tracking-wider text-amber-300">{HOME.heroTag}</p>
                   <h1 class="mt-2 text-2xl font-bold leading-tight">{featured.title}</h1>
                   {featured.summary.length > 0 && (
                     <p class="mt-2 line-clamp-3 text-sm text-zinc-400">{featured.summary}</p>

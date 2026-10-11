@@ -12,7 +12,7 @@ export function ErrorState(props: { message: string; onRetry?: () => void }) {
           onClick={props.onRetry}
           class="mt-2 rounded border border-red-700 px-3 py-1 text-sm text-red-200 hover:bg-red-900"
         >
-          再試行
+          Retry
         </button>
       )}
     </div>

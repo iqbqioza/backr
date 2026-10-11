@@ -80,9 +80,9 @@ export default function ReportList(props: {
 
   return (
     <section>
-      <h2 class="mb-2 text-xl font-semibold">活動報告 ({props.reports.length})</h2>
+      <h2 class="mb-2 text-xl font-semibold">Updates ({props.reports.length})</h2>
       {props.reports.length === 0 ? (
-        <p class="text-zinc-400">まだ報告がありません。</p>
+        <p class="text-zinc-400">No updates yet.</p>
       ) : (
         <ul class="grid gap-2">
           {props.reports.map((report) => (
@@ -90,7 +90,7 @@ export default function ReportList(props: {
               <button type="button" onClick={() => toggle(report.id)} class="w-full text-left">
                 <p class="font-medium hover:text-amber-200">{report.title}</p>
                 <p class="mt-1 font-mono text-xs text-zinc-500">
-                  {new Date(report.createdAt * 1000).toLocaleDateString("ja-JP")}
+                  {new Date(report.createdAt * 1000).toLocaleDateString("en-US")}
                   {expanded() === report.id ? " ▲" : " ▼"}
                 </p>
               </button>
@@ -136,7 +136,7 @@ export default function ReportList(props: {
                           }}
                           class="rounded border border-zinc-700 px-3 py-1 text-sm"
                         >
-                          やめる
+                          Cancel
                         </button>
                       </div>
                     </div>
@@ -157,7 +157,7 @@ export default function ReportList(props: {
                       </button>
                       {confirming() === report.id ? (
                         <span class="flex items-center gap-2 text-xs">
-                          <span class="text-zinc-300">削除しますか?</span>
+                          <span class="text-zinc-300">Delete this update?</span>
                           <button
                             type="button"
                             onClick={() => remove(report)}
@@ -173,7 +173,7 @@ export default function ReportList(props: {
                             }}
                             class="text-zinc-400 hover:text-zinc-100"
                           >
-                            やめる
+                            Cancel
                           </button>
                         </span>
                       ) : (

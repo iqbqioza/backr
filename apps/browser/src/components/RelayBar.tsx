@@ -3,7 +3,7 @@ import { DEFAULT_RELAY } from "../lib/const";
 export default function RelayBar(props: { relay: string; onChange: (url: string) => void }) {
   return (
     <div class="mb-4 flex items-center gap-2 text-sm">
-      <label class="shrink-0 text-zinc-400">リレー</label>
+      <label class="shrink-0 text-zinc-400">Relay</label>
       <input
         class="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-1.5 font-mono text-xs"
         value={props.relay}
