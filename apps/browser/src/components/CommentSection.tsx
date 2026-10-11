@@ -319,7 +319,7 @@ function ReplyForm(props: {
             onCancel={null}
           />
         ) : (
-          <p class="text-sm text-zinc-400">コメントには署名ログインが必要です。</p>
+          <p class="text-sm text-zinc-400">Please log in to post a comment.</p>
         )}
       </div>
       {error() !== null && <p class="mt-2 text-sm text-red-400">{error()}</p>}

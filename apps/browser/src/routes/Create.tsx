@@ -8,6 +8,7 @@ import { formatSats, remainingLabel } from "backr-utils";
 import { createSignal } from "solid-js";
 import { canSign, getSession, signWithSession } from "../lib/auth";
 import { OGP_ASPECT_CLASS } from "../components/thumb";
+import { CREATE } from "../lib/copy";
 import Markdown from "../components/Markdown";
 import { DEFAULT_RELAY } from "../lib/const";
 import { publishEvent } from "../lib/relay";
@@ -51,10 +52,10 @@ export default function Create() {
     const pubkey = authorPubkey();
     const amount = goalMsats();
     const problems: string[] = [];
-    if (pubkey === null) problems.push("作成者の npub/hex が不正です (ログイン時は自動設定)");
-    if (amount === null) problems.push("目標 sats は正の整数で入力してください");
+    if (pubkey === null) problems.push(CREATE.errors.creator);
+    if (amount === null) problems.push(CREATE.errors.goal);
     if (closedAt().trim().length > 0 && closedAtSec() === null) {
-      problems.push("締切の日付が不正です");
+      problems.push(CREATE.errors.deadline);
     }
     if (problems.length > 0) {
       setErrors(problems);
@@ -106,12 +107,12 @@ export default function Create() {
     signWithSession(draft)
       .then((signed) => {
         if (signed === null) {
-          setErrors(["署名に失敗しました (閲覧専用または未ログイン)"]);
+          setErrors([CREATE.errors.noSignature]);
           return;
         }
         return publishEvent(DEFAULT_RELAY, signed).then((result) => {
           if (!result.accepted) {
-            setErrors([`リレーに拒否されました: ${result.message}`]);
+            setErrors([CREATE.errors.rejected(result.message)]);
             return;
           }
           const nevent = encodeNevent({ id: signed.id, relays: [DEFAULT_RELAY] });
@@ -132,11 +133,10 @@ export default function Create() {
 
   return (
     <div>
-      <h1 class="mb-4 text-2xl font-bold">プロジェクトを作る</h1>
+      <h1 class="mb-4 text-2xl font-bold">{CREATE.title}</h1>
       {session() === null && (
         <p class="mb-4 rounded border border-zinc-700 p-3 text-sm text-zinc-300">
-          公開にはログインが必要です。ヘッダーの「ログイン」から接続してください。
-          下書きの確認だけならこのまま入力できます。
+          {CREATE.loginNotice}
         </p>
       )}
       <div class="grid gap-6 md:grid-cols-2">
@@ -162,7 +162,7 @@ export default function Create() {
             短い説明 (summary)
             <input
               class={input}
-              placeholder="例: Nostrハッカソン開催費"
+              placeholder={CREATE.summaryPlaceholder}
               value={summary()}
               onInput={(e) => {
                 setSummary(e.currentTarget.value);
@@ -174,7 +174,7 @@ export default function Create() {
             <textarea
               class={input}
               rows={6}
-              placeholder="資金の使い道・スケジュールなど"
+              placeholder={CREATE.descriptionPlaceholder}
               value={description()}
               onInput={(e) => {
                 setDescription(e.currentTarget.value);
@@ -183,7 +183,7 @@ export default function Create() {
           </label>
           <div class="grid grid-cols-2 gap-3">
             <label class="text-sm">
-              目標 (sats)
+              Goal (sats)
               <input
                 class={input}
                 inputMode="numeric"
@@ -195,7 +195,7 @@ export default function Create() {
               />
             </label>
             <label class="text-sm">
-              締切 (任意)
+              Deadline (optional)
               <input
                 class={input}
                 type="date"
@@ -222,7 +222,7 @@ export default function Create() {
             onClick={onPreview}
             class="rounded border border-zinc-600 px-4 py-2 font-semibold hover:border-zinc-300"
           >
-            イベントを確認する
+            Review event
           </button>
           {errors().length > 0 && (
             <ul class="list-disc pl-5 text-sm text-red-400">
@@ -244,7 +244,7 @@ export default function Create() {
                 ⚡
               </div>
             )}
-            <p class="text-lg font-semibold">{summary().trim() || "タイトル未入力"}</p>
+            <p class="text-lg font-semibold">{summary().trim() || "Untitled"}</p>
             {description().trim().length > 0 ? (
               <div class="mt-1 line-clamp-3 text-sm text-zinc-400 [&_a]:text-amber-300 [&_h1]:font-bold [&_h1]:text-base [&_li]:list-disc [&_li]:ml-5 [&_p]:my-1">
                 <Markdown source={description()} />
@@ -253,7 +253,7 @@ export default function Create() {
               <p class="mt-1 text-sm text-zinc-400">説明未入力</p>
             )}
             <p class="mt-3 text-sm text-zinc-400">
-              目標: {goalMsats() === null ? "—" : formatSats(goalMsats() ?? 0n)}
+              Goal: {goalMsats() === null ? "—" : formatSats(goalMsats() ?? 0n)}
               {" / "}
               {closedAtSec() === null ? "期限なし" : remainingLabel(nowSec(), closedAtSec() ?? 0)}
             </p>
@@ -268,12 +268,12 @@ export default function Create() {
               disabled={publishing()}
               class="mt-3 w-full rounded bg-amber-400 px-4 py-2 font-semibold text-zinc-950 disabled:opacity-50"
             >
-              {publishing() ? "公開中…" : `${DEFAULT_RELAY} に公開する`}
+              {publishing() ? "Publishing…" : `${DEFAULT_RELAY} に公開する`}
             </button>
           )}
           {published() !== null && (
             <p class="mt-3 rounded border border-green-800 bg-green-950/40 p-3 text-sm text-green-300">
-              公開しました。 <a class="underline" href={`/g/${published()}`}>詳細ページを開く</a>
+              Published! <a class="underline" href={`/g/${published()}`}>詳細ページを開く</a>
             </p>
           )}
         </div>

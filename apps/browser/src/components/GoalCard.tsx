@@ -1,17 +1,16 @@
 import { encodeNevent } from "backr-nostr-nips";
 import { formatSats, progressPercent, remainingLabel } from "backr-utils";
 import { createEffect, createSignal } from "solid-js";
-import type { GoalCardData } from "../lib/goals";
 import { goalStatus, GOAL_STATUS_LABEL } from "../lib/goals";
+import type { GoalCardData } from "../lib/goals";
 import type { ValidatedGoalZap } from "../lib/supporters";
+import { OGP_ASPECT_CLASS, OGP_PLACEHOLDER_SIZE_CLASS } from "./thumb";
 import ProgressMeter from "./ProgressMeter";
 
 /**
- * CAMPFIRE 風カード: サムネイル上に (ステータス・残り・タイトル) を重ね、
- * その下に達成率・支援額・支援者数を表示する。
+ * CAMPFIRE-style card: status, time left and title sit on the thumbnail,
+ * with progress, amount and supporter count below.
  */
-import { OGP_ASPECT_CLASS, OGP_PLACEHOLDER_SIZE_CLASS } from "./thumb";
-
 export default function GoalCard(props: { card: GoalCardData; zap?: ValidatedGoalZap }) {
   const nevent = () => encodeNevent({ id: props.card.id, relays: props.card.relays.slice(0, 3) }) ?? "";
   const raised = () => props.zap?.totalMsats ?? 0n;
@@ -23,13 +22,10 @@ export default function GoalCard(props: { card: GoalCardData; zap?: ValidatedGoa
       : remainingLabel(Math.floor(Date.now() / 1000), props.card.closedAt);
   const status = () =>
     goalStatus(raised(), props.card.goalMsats, Math.floor(Date.now() / 1000), props.card.closedAt);
-  const showRemaining = () => deadline() !== undefined && deadline() !== "終了";
-
-  // 締切経過判定は label 依存なので created_at ではなく closedAt で持つ
-  const ended = () => props.card.closedAt !== undefined && Math.floor(Date.now() / 1000) >= props.card.closedAt;
-  const statusLabel = () => (ended() ? "終了" : GOAL_STATUS_LABEL[status()]);
-
-  // 1分ごとに残り表示を更新
+  const ended = () =>
+    props.card.closedAt !== undefined && Math.floor(Date.now() / 1000) >= props.card.closedAt;
+  const statusLabel = () => (ended() ? GOAL_STATUS_LABEL.ended : GOAL_STATUS_LABEL[status()]);
+  const showRemaining = () => deadline() !== undefined && deadline() !== "Closed";
   const [now, setNow] = createSignal(Math.floor(Date.now() / 1000));
   createEffect(() => {
     const timer = setInterval(
@@ -41,6 +37,7 @@ export default function GoalCard(props: { card: GoalCardData; zap?: ValidatedGoa
     return () => clearInterval(timer);
   });
   void now;
+
   return (
     <a
       href={`/g/${nevent()}`}
@@ -64,7 +61,9 @@ export default function GoalCard(props: { card: GoalCardData; zap?: ValidatedGoa
                 ? "bg-amber-400 text-zinc-950"
                 : ended()
                   ? "bg-zinc-700 text-zinc-300"
-                  : "bg-green-900 text-green-200"
+                  : status() === "ending-soon"
+                    ? "bg-orange-900 text-orange-200"
+                    : "bg-green-900 text-green-200"
             }`}
           >
             {statusLabel()}
@@ -78,7 +77,7 @@ export default function GoalCard(props: { card: GoalCardData; zap?: ValidatedGoa
         <ProgressMeter raisedMsats={raised()} goalMsats={props.card.goalMsats} compact />
         <p class="mt-1 text-sm font-semibold">{formatSats(raised())}</p>
         <p class="mt-1 flex justify-between text-xs text-zinc-400">
-          <span>{count()}人が支援</span>
+          <span>{count()} supporters</span>
         </p>
       </div>
     </a>

@@ -32,7 +32,7 @@ export default function ReportForm(props: {
   };
 
   if (!canSign()) {
-    return <p class="text-sm text-zinc-400">報告の投稿には署名ログインが必要です。</p>;
+    return <p class="text-sm text-zinc-400">Sign in to post an update.</p>;
   }
 
   return (

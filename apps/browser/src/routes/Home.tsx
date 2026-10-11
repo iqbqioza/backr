@@ -10,6 +10,7 @@ import { pickSections } from "../lib/sections";
 import { fetchCardZapData, type ValidatedGoalZap } from "../lib/supporters";
 import ProgressMeter from "../components/ProgressMeter";
 import { OGP_ASPECT_CLASS } from "../components/thumb";
+import { HOME, STATES } from "../lib/copy";
 
 function Section(props: { title: string; children: JSX.Element }) {
   return (
@@ -39,7 +40,7 @@ export default function Home() {
       .then((profiles) => fetchCardZapData(url, cards(), profiles))
       .then(setZapData)
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : "取得に失敗しました");
+        setError(err instanceof Error ? err.message : STATES.fetchFailed);
       })
       .finally(() => {
         setLoading(false);
@@ -63,7 +64,7 @@ export default function Home() {
       {loading() && <Loading />}
       {error() !== null && !loading() && <ErrorState message={`リレー取得失敗: ${error()}`} onRetry={load} />}
       {!loading() && error() === null && cards().length === 0 && (
-        <EmptyState message="まだプロジェクトがありません。「作る」から最初の案件を公開しましょう。" />
+        <EmptyState message='No projects yet. Publish the first one from "Start a project".' />
       )}
       {!loading() && sections().featured !== null && (
         <a
@@ -116,14 +117,14 @@ export default function Home() {
         </a>
       )}
       {!loading() && sections().recommended.length > 0 && (
-        <Section title="おすすめ">
+        <Section title={HOME.recommended} >
           {sections().recommended.map((card) => (
             <GoalCard card={card} zap={zapOf(card.id)} />
           ))}
         </Section>
       )}
       {!loading() && sections().endingSoon.length > 0 && (
-        <Section title="もうすぐ終了">
+        <Section title={HOME.endingSoon} >
           {sections().endingSoon.map((card) => (
             <GoalCard card={card} zap={zapOf(card.id)} />
           ))}
@@ -131,7 +132,7 @@ export default function Home() {
       )}
       {!loading() && sections().fresh.length > 0 && (
         <section class="mt-10">
-          <h2 class="mb-3 text-xl font-bold">新着</h2>
+          <h2 class="mb-3 text-xl font-bold">{HOME.fresh}</h2>
           <div class="flex gap-4 overflow-x-auto pb-2">
             {sections().fresh.map((card) => (
               <GoalCard card={card} zap={zapOf(card.id)} />

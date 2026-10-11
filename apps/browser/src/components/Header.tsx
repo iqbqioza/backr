@@ -11,13 +11,14 @@ import {
   resolveSecret,
   type AuthMethod,
 } from "../lib/auth";
-import { shortKey } from "./SupporterList";
+import { AUTH, NAV } from "../lib/copy";
+import { shortKey } from "./people";
 
 const METHOD_LABEL: Record<AuthMethod, string> = {
-  nip07: "拡張",
+  nip07: "Extension",
   nsec: "nsec",
   bunker: "Bunker",
-  readonly: "閲覧専用",
+  readonly: "Read-only",
 };
 
 export default function Header() {
@@ -30,14 +31,14 @@ export default function Header() {
 
   const connectNip07 = () => {
     if (!hasNip07() || window.nostr === undefined) {
-      setNotice("NIP-07 対応のブラウザ拡張が見つかりません");
+      setNotice(AUTH.errors.noExtension);
       return;
     }
     window.nostr
       .getPublicKey()
       .then((pubkey) => {
         if (!/^[0-9a-f]{64}$/.test(pubkey)) {
-          setNotice("拡張から不正な公開鍵が返されました");
+          setNotice(AUTH.errors.badExtensionKey);
           return;
         }
         loginNip07(pubkey);
@@ -45,14 +46,14 @@ export default function Header() {
         setOpen(false);
       })
       .catch(() => {
-        setNotice("拡張への接続が拒否されました");
+        setNotice(AUTH.errors.extensionDenied);
       });
   };
 
   const connectNsec = () => {
     const info = resolveSecret(nsecInput());
     if (info === null) {
-      setNotice("nsec の形式が不正です");
+      setNotice(AUTH.errors.badNsec);
       return;
     }
     loginNsec(info.secretHex, info.pubkey);
@@ -64,7 +65,7 @@ export default function Header() {
   const connectReadonly = () => {
     const pubkey = resolvePubkeyInput(npubInput());
     if (pubkey === null) {
-      setNotice("npub の形式が不正です");
+      setNotice(AUTH.errors.badNpub);
       return;
     }
     loginReadonly(pubkey);
@@ -75,11 +76,11 @@ export default function Header() {
 
   const connectBunker = () => {
     if (bunkerInput().trim().length === 0) {
-      setNotice("bunker:// URL を入力してください");
+      setNotice(AUTH.errors.bunkerEmpty);
       return;
     }
     setWorking(true);
-    setNotice("署名器の承認を待っています…");
+    setNotice(AUTH.waiting);
     loginBunker(bunkerInput().trim())
       .then(() => {
         setBunkerInput("");
@@ -87,7 +88,7 @@ export default function Header() {
         setOpen(false);
       })
       .catch((err: unknown) => {
-        setNotice(err instanceof Error ? err.message : "Bunker 接続に失敗しました");
+        setNotice(err instanceof Error ? err.message : "Bunker connection failed");
       })
       .finally(() => {
         setWorking(false);
@@ -101,16 +102,16 @@ export default function Header() {
     <header class="border-b border-zinc-800">
       <nav class="mx-auto flex max-w-4xl items-center gap-6 px-4 py-3">
         <a href="/" class="text-lg font-bold tracking-tight">
-          Backr
+          {NAV.brand}
         </a>
         <a href="/" class="text-sm text-zinc-400 hover:text-zinc-100">
-          探す
+          {NAV.discover}
         </a>
         <a href="/create" class="text-sm text-zinc-400 hover:text-zinc-100">
-          作る
+          {NAV.create}
         </a>
         <a href="/about" class="text-sm text-zinc-400 hover:text-zinc-100">
-          Backrとは
+          {NAV.about}
         </a>
         {session() === null ? (
           <button
@@ -121,7 +122,7 @@ export default function Header() {
             }}
             class="ml-auto rounded border border-zinc-600 px-3 py-1 text-sm hover:border-zinc-300"
           >
-            ログイン
+            {NAV.login}
           </button>
         ) : (
           <span class="ml-auto flex items-center gap-2 text-sm">
@@ -134,7 +135,7 @@ export default function Header() {
               onClick={logout}
               class="rounded border border-zinc-700 px-2 py-0.5 text-xs text-zinc-400 hover:text-zinc-100"
             >
-              ログアウト
+              {NAV.logout}
             </button>
           </span>
         )}
@@ -143,7 +144,7 @@ export default function Header() {
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div class="w-full max-w-md rounded-lg border border-zinc-700 bg-zinc-900 p-5">
             <div class="mb-4 flex items-center">
-              <h2 class="text-lg font-semibold">ログイン</h2>
+              <h2 class="text-lg font-semibold">{AUTH.title}</h2>
               <button
                 type="button"
                 onClick={() => {
@@ -151,28 +152,28 @@ export default function Header() {
                 }}
                 class="ml-auto text-sm text-zinc-400 hover:text-zinc-100"
               >
-                閉じる
+                {AUTH.close}
               </button>
             </div>
             <div class="grid gap-3">
               <div class="rounded border border-zinc-700 p-3">
-                <p class="font-medium">ブラウザ拡張</p>
-                <p class="mt-1 text-sm text-zinc-400">NIP-07 対応拡張で署名 (推奨)</p>
+                <p class="font-medium">{AUTH.extension}</p>
+                <p class="mt-1 text-sm text-zinc-400">{AUTH.extensionDesc}</p>
                 <button
                   type="button"
                   onClick={connectNip07}
                   class="mt-2 rounded bg-amber-400 px-3 py-1 text-sm font-semibold text-zinc-950"
                 >
-                  拡張に接続
+                  {AUTH.extensionConnect}
                 </button>
               </div>
               <div class="rounded border border-zinc-700 p-3">
-                <p class="font-medium">nsec</p>
-                <p class="mt-1 text-sm text-zinc-400">秘密鍵はメモリ保持のみ。保存しません</p>
+                <p class="font-medium">{AUTH.nsec}</p>
+                <p class="mt-1 text-sm text-zinc-400">{AUTH.nsecDesc}</p>
                 <input
                   class={input}
                   type="password"
-                  placeholder="nsec1…"
+                  placeholder={AUTH.nsecPlaceholder}
                   value={nsecInput()}
                   onInput={(e) => {
                     setNsecInput(e.currentTarget.value);
@@ -183,15 +184,15 @@ export default function Header() {
                   onClick={connectNsec}
                   class="mt-2 rounded border border-zinc-600 px-3 py-1 text-sm hover:border-zinc-300"
                 >
-                  nsecでログイン
+                  {AUTH.nsecLogin}
                 </button>
               </div>
               <div class="rounded border border-zinc-700 p-3">
-                <p class="font-medium">リモート署名器 (NIP-46)</p>
-                <p class="mt-1 text-sm text-zinc-400">bunker:// URL で接続。秘密鍵は渡りません</p>
+                <p class="font-medium">{AUTH.bunker}</p>
+                <p class="mt-1 text-sm text-zinc-400">{AUTH.bunkerDesc}</p>
                 <input
                   class={input}
-                  placeholder="bunker://…"
+                  placeholder={AUTH.bunkerPlaceholder}
                   value={bunkerInput()}
                   onInput={(e) => {
                     setBunkerInput(e.currentTarget.value);
@@ -203,15 +204,15 @@ export default function Header() {
                   disabled={working()}
                   class="mt-2 rounded border border-zinc-600 px-3 py-1 text-sm hover:border-zinc-300 disabled:opacity-50"
                 >
-                  {working() ? "接続中…" : "Bunkerに接続"}
+                  {working() ? AUTH.bunkerConnecting : AUTH.bunkerConnect}
                 </button>
               </div>
               <div class="rounded border border-zinc-700 p-3">
-                <p class="font-medium">読み取り専用</p>
-                <p class="mt-1 text-sm text-zinc-400">npub で閲覧のみ (署名・公開不可)</p>
+                <p class="font-medium">{AUTH.readonly}</p>
+                <p class="mt-1 text-sm text-zinc-400">{AUTH.readonlyDesc}</p>
                 <input
                   class={input}
-                  placeholder="npub1…"
+                  placeholder={AUTH.readonlyPlaceholder}
                   value={npubInput()}
                   onInput={(e) => {
                     setNpubInput(e.currentTarget.value);
@@ -222,11 +223,12 @@ export default function Header() {
                   onClick={connectReadonly}
                   class="mt-2 rounded border border-zinc-600 px-3 py-1 text-sm hover:border-zinc-300"
                 >
-                  閲覧する
+                  {AUTH.readonlyEnter}
                 </button>
               </div>
             </div>
             {notice() !== null && <p class="mt-3 text-sm text-red-400">{notice()}</p>}
+            <p class="mt-3 text-xs text-zinc-500">{AUTH.memoryOnly}</p>
           </div>
         </div>
       )}

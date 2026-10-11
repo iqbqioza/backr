@@ -1,5 +1,5 @@
 export function Loading(props: { label?: string }) {
-  return <p class="py-8 text-center text-zinc-400">{props.label ?? "読み込み中…"}</p>;
+  return <p class="py-8 text-center text-zinc-400">{props.label ?? "Loading…"}</p>;
 }
 
 export function ErrorState(props: { message: string; onRetry?: () => void }) {

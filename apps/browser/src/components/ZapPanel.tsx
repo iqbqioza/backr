@@ -44,7 +44,7 @@ export default function ZapPanel(props: {
 
   const onProceed = () => {
     if (!canSign()) {
-      setError("支援にはログインが必要です (閲覧専用は不可)");
+      setError("Login required to support (read-only cannot zap)");
       return;
     }
     const target =
@@ -134,7 +134,7 @@ export default function ZapPanel(props: {
       <h2 class="font-semibold">このプロジェクトを支援する</h2>
       {props.ended ? (
         <p class="mt-2 text-sm text-zinc-400">
-          募集は終了しました。集計後の支援はメーターに反映されません。
+          Funding closed. Zaps after tally are not counted.
         </p>
       ) : phase() === "invoice" && invoice() !== null ? (
         <div>
@@ -210,7 +210,7 @@ export default function ZapPanel(props: {
             }}
           />
           <p class="mt-2 text-sm text-zinc-400">
-            目標 {formatSats(props.goalMsats)} / 支援額: {formatSats(BigInt(selected()) * 1000n)}
+            Goal: {formatSats(props.goalMsats)} · Amount: {formatSats(BigInt(selected()) * 1000n)}
             (Zap 直送・All-in のため返金なし)
           </p>
           <button

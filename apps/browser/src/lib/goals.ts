@@ -63,7 +63,7 @@ export function toReportData(ev: NostrEventLike, goalId: string): ReportData | n
     id: ev.id,
     author: ev.pubkey,
     identifier,
-    title: ev.tags.find((t) => t[0] === "title")?.[1] ?? "活動報告",
+    title: ev.tags.find((t) => t[0] === "title")?.[1] ?? "Update",
     createdAt: ev.created_at,
     content: ev.content,
   };

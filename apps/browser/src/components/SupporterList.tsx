@@ -11,9 +11,9 @@ export default function SupporterList(props: {
 }) {
   return (
     <section>
-      <h2 class="mb-2 font-semibold">支援者 ({props.supporters.length})</h2>
+      <h2 class="mb-2 font-semibold">Supporters ({props.supporters.length})</h2>
       {props.supporters.length === 0 ? (
-        <p class="text-zinc-400">まだ支援がありません。最初の支援者になりましょう。</p>
+        <p class="text-zinc-400">No supporters yet. Be the first!</p>
       ) : (
         <ul class="grid gap-2">
           {props.supporters.map((supporter) => (

@@ -39,23 +39,23 @@ describe("progressPercent", () => {
 
 describe("remainingLabel", () => {
   it("ends at deadline", () => {
-    expect(remainingLabel(100, 100)).toBe("終了");
-    expect(remainingLabel(101, 100)).toBe("終了");
+    expect(remainingLabel(100, 100)).toBe("Closed");
+    expect(remainingLabel(101, 100)).toBe("Closed");
   });
   it("shows days/hours/minutes", () => {
-    expect(remainingLabel(0, 86400 * 3)).toBe("残り3日");
-    expect(remainingLabel(0, 7200)).toBe("残り2時間");
-    expect(remainingLabel(0, 90)).toBe("残り1分");
+    expect(remainingLabel(0, 86400 * 3)).toBe("3d left");
+    expect(remainingLabel(0, 7200)).toBe("2h left");
+    expect(remainingLabel(0, 90)).toBe("1m left");
   });
 });
 
 describe("timeAgo", () => {
   it("formats relative time", () => {
-    expect(timeAgo(100, 100)).toBe("たった今");
-    expect(timeAgo(100, 90)).toBe("たった今");
-    expect(timeAgo(200, 100)).toBe("1分前");
-    expect(timeAgo(3700, 100)).toBe("1時間前");
-    expect(timeAgo(7300, 100)).toBe("2時間前");
-    expect(timeAgo(86400 * 5, 0)).toBe("5日前");
+    expect(timeAgo(100, 100)).toBe("just now");
+    expect(timeAgo(100, 90)).toBe("just now");
+    expect(timeAgo(200, 100)).toBe("1m ago");
+    expect(timeAgo(3700, 100)).toBe("1h ago");
+    expect(timeAgo(7300, 100)).toBe("2h ago");
+    expect(timeAgo(86400 * 5, 0)).toBe("5d ago");
   });
 });

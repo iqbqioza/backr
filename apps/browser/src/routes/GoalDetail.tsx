@@ -268,7 +268,7 @@ export default function GoalDetail() {
                     <span class="h-20 w-20 shrink-0 rounded-full bg-gradient-to-br from-zinc-500 to-zinc-700" />
                   )}
                   <div class="min-w-0">
-                    <p class="text-xl font-bold">{profile()?.name ?? "読み込み中…"}</p>
+                    <p class="text-xl font-bold">{profile()?.name ?? "Loading…"}</p>
                     {profile()?.about !== undefined && (
                       <p class="mt-2 whitespace-pre-wrap break-words text-sm text-zinc-300">
                         {profile()?.about}
@@ -297,10 +297,10 @@ export default function GoalDetail() {
                   <ProgressMeter raisedMsats={raised()} goalMsats={card()?.goalMsats ?? 0n} compact />
                 </div>
                 <p class="mt-2 text-lg font-semibold">{formatSats(raised())}</p>
-                <p class="text-sm text-zinc-400">目標 {formatSats(card()?.goalMsats ?? 0n)}</p>
+                <p class="text-sm text-zinc-400">Goal {formatSats(card()?.goalMsats ?? 0n)}</p>
                 {remaining() > 0n && (
                   <p class="mt-1 text-sm font-semibold text-amber-300">
-                    あと {formatSats(remaining())} で達成！
+                    Remaining: {formatSats(remaining())} sats to goal
                   </p>
                 )}
                 <div class="mt-3 flex justify-between border-t border-zinc-800 pt-3 text-sm">
@@ -308,7 +308,7 @@ export default function GoalDetail() {
                   <span class="font-semibold">{supporters().length}人</span>
                 </div>
                 <div class="flex justify-between text-sm">
-                  <span class="text-zinc-400">残り時間</span>
+                  <span class="text-zinc-400">Time left</span>
                   <span class="font-semibold">{deadline()}</span>
                 </div>
                 <p class="mt-2 text-xs text-zinc-500">
