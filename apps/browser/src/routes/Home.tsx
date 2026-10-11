@@ -9,6 +9,7 @@ import { fetchGoalCards, fetchProfiles, type GoalCardData } from "../lib/goals";
 import { pickSections } from "../lib/sections";
 import { fetchCardZapData, type ValidatedGoalZap } from "../lib/supporters";
 import ProgressMeter from "../components/ProgressMeter";
+import { OGP_ASPECT_CLASS } from "../components/thumb";
 
 function Section(props: { title: string; children: JSX.Element }) {
   return (
@@ -77,9 +78,15 @@ export default function Home() {
             return (
               <>
                 {featured.image !== undefined ? (
-                  <img src={featured.image} alt="" class="h-64 w-full object-cover md:col-span-3 md:h-full" />
+                  <img
+                    src={featured.image}
+                    alt=""
+                    class={`w-full object-cover md:col-span-3 ${OGP_ASPECT_CLASS}`}
+                  />
                 ) : (
-                  <div class="flex h-64 w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-7xl md:col-span-3 md:h-full">
+                  <div
+                    class={`flex w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-7xl md:col-span-3 ${OGP_ASPECT_CLASS}`}
+                  >
                     ⚡
                   </div>
                 )}

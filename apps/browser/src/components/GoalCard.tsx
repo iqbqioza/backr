@@ -10,6 +10,8 @@ import ProgressMeter from "./ProgressMeter";
  * CAMPFIRE 風カード: サムネイル上に (ステータス・残り・タイトル) を重ね、
  * その下に達成率・支援額・支援者数を表示する。
  */
+import { OGP_ASPECT_CLASS, OGP_PLACEHOLDER_SIZE_CLASS } from "./thumb";
+
 export default function GoalCard(props: { card: GoalCardData; zap?: ValidatedGoalZap }) {
   const nevent = () => encodeNevent({ id: props.card.id, relays: props.card.relays.slice(0, 3) }) ?? "";
   const raised = () => props.zap?.totalMsats ?? 0n;
@@ -44,11 +46,13 @@ export default function GoalCard(props: { card: GoalCardData; zap?: ValidatedGoa
       href={`/g/${nevent()}`}
       class="block w-64 shrink-0 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 hover:border-zinc-600"
     >
-      <div class="relative h-36 w-full">
+      <div class={`relative ${OGP_ASPECT_CLASS} w-full`}>
         {props.card.image !== undefined ? (
-          <img src={props.card.image} alt="" class="h-36 w-full object-cover" />
+          <img src={props.card.image} alt="" class={`${OGP_ASPECT_CLASS} w-full object-cover`} />
         ) : (
-          <div class="flex h-36 w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-5xl">
+          <div
+            class={`flex ${OGP_ASPECT_CLASS} w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 ${OGP_PLACEHOLDER_SIZE_CLASS}`}
+          >
             ⚡
           </div>
         )}

@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import { OGP_ASPECT_CLASS } from "../components/thumb";
 import { getSession } from "../lib/auth";
 import { requestDeletion } from "../lib/deletion";
 import type { ReportData } from "../lib/goals";
@@ -95,7 +96,11 @@ export default function ReportList(props: {
               {expanded() === report.id && (
                 <div class="mt-2 border-t border-zinc-800 pt-2">
                   {report.image !== undefined && (
-                    <img src={report.image} alt="" class="mb-2 h-40 w-full rounded object-cover" />
+                    <img
+                      src={report.image}
+                      alt=""
+                      class={`mb-2 w-full rounded object-cover ${OGP_ASPECT_CLASS}`}
+                    />
                   )}
                   {editing() === report.id ? (
                     <div class="grid gap-2">

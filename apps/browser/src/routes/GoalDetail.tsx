@@ -2,6 +2,7 @@ import { useParams } from "@solidjs/router";
 import { decodeNevent, encodeNevent } from "backr-nostr-nips";
 import { formatSats, progressPercent, remainingLabel, timeAgo } from "backr-utils";
 import { createSignal, onMount } from "solid-js";
+import { OGP_ASPECT_CLASS } from "../components/thumb";
 import CommentSection from "../components/CommentSection";
 import ProgressMeter from "../components/ProgressMeter";
 import ReportForm from "../components/ReportForm";
@@ -181,9 +182,11 @@ export default function GoalDetail() {
             </div>
             <h1 class="px-4 pb-3 text-2xl font-bold leading-tight md:text-3xl">{card()?.title}</h1>
             {card()?.image !== undefined ? (
-              <img src={card()?.image} alt="" class="h-64 w-full object-cover" />
+              <img src={card()?.image} alt="" class={`w-full object-cover ${OGP_ASPECT_CLASS}`} />
             ) : (
-              <div class="flex h-64 w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-7xl">
+              <div
+                class={`flex w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-7xl ${OGP_ASPECT_CLASS}`}
+              >
                 ⚡
               </div>
             )}

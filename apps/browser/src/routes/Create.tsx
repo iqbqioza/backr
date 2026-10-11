@@ -7,9 +7,10 @@ import {
 import { formatSats, remainingLabel } from "backr-utils";
 import { createSignal } from "solid-js";
 import { canSign, getSession, signWithSession } from "../lib/auth";
+import { OGP_ASPECT_CLASS } from "../components/thumb";
 import { DEFAULT_RELAY } from "../lib/const";
 import { publishEvent } from "../lib/relay";
-import { shortKey } from "../components/SupporterList";
+import { shortKey } from "../components/people";
 
 export default function Create() {
   const [npub, setNpub] = createSignal("");
@@ -234,9 +235,11 @@ export default function Create() {
           <h2 class="mb-2 font-semibold">プレビュー</h2>
           <div class="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
             {image().trim().length > 0 ? (
-              <img src={image().trim()} alt="" class="mb-3 h-40 w-full rounded object-cover" />
+              <img src={image().trim()} alt="" class={`mb-3 w-full rounded object-cover ${OGP_ASPECT_CLASS}`} />
             ) : (
-              <div class="mb-3 flex h-40 w-full items-center justify-center rounded bg-gradient-to-br from-zinc-800 to-zinc-900 text-4xl">
+              <div
+                class={`mb-3 flex w-full items-center justify-center rounded bg-gradient-to-br from-zinc-800 to-zinc-900 text-4xl ${OGP_ASPECT_CLASS}`}
+              >
                 ⚡
               </div>
             )}
