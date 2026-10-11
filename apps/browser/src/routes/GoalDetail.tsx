@@ -163,24 +163,24 @@ export default function GoalDetail() {
       )}
       {card() !== null && (
         <article>
+          <div class="mb-4 flex flex-wrap items-center gap-2">
+            <span
+              class={`rounded-full px-3 py-1 text-sm font-semibold ${
+                status() === "achieved"
+                  ? "bg-amber-400 text-zinc-950"
+                  : status() === "active"
+                    ? "bg-green-900 text-green-200"
+                    : status() === "ending-soon"
+                      ? "bg-orange-900 text-orange-200"
+                      : "bg-zinc-700 text-zinc-300"
+              }`}
+            >
+              {GOAL_STATUS_LABEL[status()]}
+            </span>
+            <span class="text-sm text-zinc-400">{deadline()}</span>
+          </div>
+          <h1 class="mb-4 text-2xl font-bold leading-tight md:text-3xl">{card()?.title}</h1>
           <div class="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900">
-            <div class="flex flex-wrap items-center gap-2 px-4 py-3">
-              <span
-                class={`rounded-full px-3 py-1 text-sm font-semibold ${
-                  status() === "achieved"
-                    ? "bg-amber-400 text-zinc-950"
-                    : status() === "active"
-                      ? "bg-green-900 text-green-200"
-                      : status() === "ending-soon"
-                        ? "bg-orange-900 text-orange-200"
-                        : "bg-zinc-700 text-zinc-300"
-                }`}
-              >
-                {GOAL_STATUS_LABEL[status()]}
-              </span>
-              <span class="text-sm text-zinc-400">{deadline()}</span>
-            </div>
-            <h1 class="px-4 pb-3 text-2xl font-bold leading-tight md:text-3xl">{card()?.title}</h1>
             {card()?.image !== undefined ? (
               <img src={card()?.image} alt="" class={`w-full object-cover ${OGP_ASPECT_CLASS}`} />
             ) : (
