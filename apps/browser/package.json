@@ -16,10 +16,13 @@
     "backr-nostr-utils": "workspace:*",
     "backr-nostr-ws": "workspace:*",
     "backr-utils": "workspace:*",
+    "dompurify": "3.4.16",
+    "markdown-it": "15.0.2",
     "solid-js": "1.9.17"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.3",
+    "jsdom": "30.1.2",
     "tailwindcss": "4.3.3",
     "typescript": "5.9.2",
     "vite": "7.3.7",

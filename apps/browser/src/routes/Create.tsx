@@ -8,6 +8,7 @@ import { formatSats, remainingLabel } from "backr-utils";
 import { createSignal } from "solid-js";
 import { canSign, getSession, signWithSession } from "../lib/auth";
 import { OGP_ASPECT_CLASS } from "../components/thumb";
+import Markdown from "../components/Markdown";
 import { DEFAULT_RELAY } from "../lib/const";
 import { publishEvent } from "../lib/relay";
 import { shortKey } from "../components/people";
@@ -244,9 +245,13 @@ export default function Create() {
               </div>
             )}
             <p class="text-lg font-semibold">{summary().trim() || "タイトル未入力"}</p>
-            <p class="mt-1 line-clamp-3 whitespace-pre-wrap text-sm text-zinc-400">
-              {description() || "説明未入力"}
-            </p>
+            {description().trim().length > 0 ? (
+              <div class="mt-1 line-clamp-3 text-sm text-zinc-400 [&_a]:text-amber-300 [&_h1]:font-bold [&_h1]:text-base [&_li]:list-disc [&_li]:ml-5 [&_p]:my-1">
+                <Markdown source={description()} />
+              </div>
+            ) : (
+              <p class="mt-1 text-sm text-zinc-400">説明未入力</p>
+            )}
             <p class="mt-3 text-sm text-zinc-400">
               目標: {goalMsats() === null ? "—" : formatSats(goalMsats() ?? 0n)}
               {" / "}

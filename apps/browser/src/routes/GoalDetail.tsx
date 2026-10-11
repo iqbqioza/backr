@@ -4,6 +4,7 @@ import { formatSats, progressPercent, remainingLabel, timeAgo } from "backr-util
 import { createSignal, onMount } from "solid-js";
 import { OGP_ASPECT_CLASS } from "../components/thumb";
 import CommentSection from "../components/CommentSection";
+import Markdown from "../components/Markdown";
 import ProgressMeter from "../components/ProgressMeter";
 import ReportForm from "../components/ReportForm";
 import RelayBar from "../components/RelayBar";
@@ -219,7 +220,9 @@ export default function GoalDetail() {
                 ))}
               </div>
               <section classList={{ hidden: tab() !== "desc" }}>
-                <p class="whitespace-pre-wrap text-zinc-300">{card()?.description}</p>
+                <div class="text-zinc-300 [&_a]:text-amber-300 [&_a]:underline [&_img]:rounded-lg [&_li]:ml-5 [&_li]:list-disc [&_ol]:grid [&_ol]:gap-1 [&_p]:my-2 [&_pre]:overflow-auto [&_pre]:rounded [&_pre]:bg-zinc-950 [&_pre]:p-3 [&_ul]:grid [&_ul]:gap-1 [&_h1]:mb-2 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-bold [&_blockquote]:border-l-2 [&_blockquote]:border-zinc-700 [&_blockquote]:pl-3">
+                  <Markdown source={card()?.description ?? ""} />
+                </div>
               </section>
               <div classList={{ hidden: tab() !== "supporters" }}>
                 <SupporterHighlights supporters={supporters()} profiles={supporterProfiles()} />

@@ -1,5 +1,6 @@
 import { createSignal } from "solid-js";
 import { OGP_ASPECT_CLASS } from "../components/thumb";
+import Markdown from "../components/Markdown";
 import { getSession } from "../lib/auth";
 import { requestDeletion } from "../lib/deletion";
 import type { ReportData } from "../lib/goals";
@@ -140,7 +141,10 @@ export default function ReportList(props: {
                       </div>
                     </div>
                   ) : (
-                    <p class="whitespace-pre-wrap break-words text-sm text-zinc-200">{report.content}</p>
+                    <Markdown
+                      class="text-sm text-zinc-200 [&_a]:text-amber-300 [&_img]:my-2 [&_img]:rounded [&_li]:ml-5 [&_li]:list-disc [&_p]:my-2 [&_pre]:overflow-auto [&_pre]:rounded [&_pre]:bg-zinc-950 [&_pre]:p-2 [&_ul]:grid [&_ul]:gap-1"
+                      source={report.content}
+                    />
                   )}
                   {isMine(report) && editing() !== report.id && (
                     <div class="mt-2 flex gap-2">
