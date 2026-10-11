@@ -5,6 +5,8 @@ export * from "./event";
 export * from "./goal";
 export * from "./hex";
 export * from "./lnurl";
+export * from "./nip44";
+export * from "./nip46";
 export * from "./nip19";
 export * from "./zap";
 export * from "./zapRequest";

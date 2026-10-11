@@ -1,5 +1,6 @@
 import { hmac } from "@noble/hashes/hmac.js";
 import { sha256 } from "@noble/hashes/sha2.js";
+import { randomBytes } from "@noble/hashes/utils.js";
 import { hashes, schnorr } from "@noble/secp256k1";
 import { bytesToHex, hexToBytes } from "./hex";
 import { isHex32, normalizeEventLike, type NostrEventLike } from "./event";
@@ -40,6 +41,11 @@ export function derivePublicKey(secretHex: string): string | null {
   } catch {
     return null;
   }
+}
+
+/** 使い捨て秘密鍵 (hex) を CSPRNG で生成 */
+export function generateSecretKey(): string {
+  return bytesToHex(randomBytes(32));
 }
 
 /** 署名して完全なイベントにする。不正なら null */

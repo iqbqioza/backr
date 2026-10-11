@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   computeEventId,
   derivePublicKey,
+  generateSecretKey,
   signEvent,
   verifyEventSignature,
   type UnsignedEvent,
@@ -29,6 +30,16 @@ describe("derivePublicKey", () => {
   it("rejects garbage", () => {
     expect(derivePublicKey("zz")).toBeNull();
     expect(derivePublicKey("0".repeat(64))).toBeNull();
+  });
+});
+
+describe("generateSecretKey", () => {
+  it("generates distinct valid secrets", () => {
+    const a = generateSecretKey();
+    const b = generateSecretKey();
+    expect(a).toMatch(/^[0-9a-f]{64}$/);
+    expect(derivePublicKey(a)).toMatch(/^[0-9a-f]{64}$/);
+    expect(a).not.toBe(b);
   });
 });
 

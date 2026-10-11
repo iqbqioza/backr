@@ -2,6 +2,7 @@ import { createSignal } from "solid-js";
 import {
   getSession,
   hasNip07,
+  loginBunker,
   loginNip07,
   loginNsec,
   loginReadonly,
@@ -15,6 +16,7 @@ import { shortKey } from "./SupporterList";
 const METHOD_LABEL: Record<AuthMethod, string> = {
   nip07: "拡張",
   nsec: "nsec",
+  bunker: "Bunker",
   readonly: "閲覧専用",
 };
 
@@ -22,6 +24,8 @@ export default function Header() {
   const [open, setOpen] = createSignal(false);
   const [nsecInput, setNsecInput] = createSignal("");
   const [npubInput, setNpubInput] = createSignal("");
+  const [bunkerInput, setBunkerInput] = createSignal("");
+  const [working, setWorking] = createSignal(false);
   const [notice, setNotice] = createSignal<string | null>(null);
 
   const connectNip07 = () => {
@@ -67,6 +71,27 @@ export default function Header() {
     setNpubInput("");
     setNotice(null);
     setOpen(false);
+  };
+
+  const connectBunker = () => {
+    if (bunkerInput().trim().length === 0) {
+      setNotice("bunker:// URL を入力してください");
+      return;
+    }
+    setWorking(true);
+    setNotice("署名器の承認を待っています…");
+    loginBunker(bunkerInput().trim())
+      .then(() => {
+        setBunkerInput("");
+        setNotice(null);
+        setOpen(false);
+      })
+      .catch((err: unknown) => {
+        setNotice(err instanceof Error ? err.message : "Bunker 接続に失敗しました");
+      })
+      .finally(() => {
+        setWorking(false);
+      });
   };
 
   const session = () => getSession();
@@ -159,6 +184,26 @@ export default function Header() {
                   class="mt-2 rounded border border-zinc-600 px-3 py-1 text-sm hover:border-zinc-300"
                 >
                   nsecでログイン
+                </button>
+              </div>
+              <div class="rounded border border-zinc-700 p-3">
+                <p class="font-medium">リモート署名器 (NIP-46)</p>
+                <p class="mt-1 text-sm text-zinc-400">bunker:// URL で接続。秘密鍵は渡りません</p>
+                <input
+                  class={input}
+                  placeholder="bunker://…"
+                  value={bunkerInput()}
+                  onInput={(e) => {
+                    setBunkerInput(e.currentTarget.value);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={connectBunker}
+                  disabled={working()}
+                  class="mt-2 rounded border border-zinc-600 px-3 py-1 text-sm hover:border-zinc-300 disabled:opacity-50"
+                >
+                  {working() ? "接続中…" : "Bunkerに接続"}
                 </button>
               </div>
               <div class="rounded border border-zinc-700 p-3">

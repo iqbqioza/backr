@@ -9,8 +9,9 @@ import {
   type NostrEventLike,
   type UnsignedEvent,
 } from "backr-nostr-nips";
+import { connectBunker, type BunkerClient } from "backr-nostr-ws";
 
-export type AuthMethod = "nip07" | "nsec" | "readonly";
+export type AuthMethod = "nip07" | "nsec" | "bunker" | "readonly";
 
 export interface Session {
   method: AuthMethod;
@@ -33,27 +34,47 @@ export function getSession(): Session | null {
   return session();
 }
 
-/** 秘密鍵はメモリ保持のみ。保存・送信しない */
+/** 秘密鍵・bunker 接続はメモリ保持のみ。保存・送信しない */
 let nsecSecret: Uint8Array | null = null;
+let bunkerClient: BunkerClient | null = null;
 
 export function loginNip07(pubkey: string): void {
   nsecSecret = null;
+  bunkerClient?.close();
+  bunkerClient = null;
   setSession({ method: "nip07", pubkey });
 }
 
 export function loginNsec(secretHex: string, pubkey: string): void {
   const bytes = hexToBytes(secretHex);
   nsecSecret = bytes === null ? null : bytes.slice();
+  bunkerClient?.close();
+  bunkerClient = null;
   setSession({ method: "nsec", pubkey });
 }
 
 export function loginReadonly(pubkey: string): void {
   nsecSecret = null;
+  bunkerClient?.close();
+  bunkerClient = null;
   setSession({ method: "readonly", pubkey });
+}
+
+/** NIP-46 bunker 接続。署名器側の承認が必要 */
+export async function loginBunker(bunkerUrl: string): Promise<void> {
+  const client = await connectBunker(bunkerUrl, {
+    metadata: JSON.stringify({ name: "Backr", url: "https://github.com/iqbqioza/backr" }),
+  });
+  nsecSecret = null;
+  bunkerClient?.close();
+  bunkerClient = client;
+  setSession({ method: "bunker", pubkey: client.userPubkey });
 }
 
 export function logout(): void {
   nsecSecret = null;
+  bunkerClient?.close();
+  bunkerClient = null;
   setSession(null);
 }
 
@@ -99,6 +120,14 @@ export async function signWithSession(unsigned: UnsignedEvent): Promise<NostrEve
   if (s.method === "nsec") {
     if (nsecSecret === null) return null;
     return signEvent(unsigned, bytesToHex(nsecSecret));
+  }
+  if (s.method === "bunker") {
+    if (bunkerClient === null) return null;
+    try {
+      return await bunkerClient.signEvent(unsigned);
+    } catch {
+      return null;
+    }
   }
   if (typeof window === "undefined" || window.nostr === undefined) return null;
   try {
