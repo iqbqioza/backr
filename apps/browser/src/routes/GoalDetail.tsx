@@ -3,11 +3,12 @@ import { decodeNevent, encodeNevent } from "backr-nostr-nips";
 import { formatSats, progressPercent, remainingLabel, timeAgo } from "backr-utils";
 import { createSignal, onMount } from "solid-js";
 import CommentSection from "../components/CommentSection";
-import ReportForm from "../components/ReportForm";
-import { avatarImage } from "../components/SupporterList";
 import ProgressMeter from "../components/ProgressMeter";
+import ReportForm from "../components/ReportForm";
 import RelayBar from "../components/RelayBar";
 import ReportList from "../components/ReportList";
+import { avatarImage } from "../components/people";
+import SupporterHighlights from "../components/SupporterHighlights";
 import { EmptyState, ErrorState, Loading } from "../components/States";
 import SupporterList from "../components/SupporterList";
 import ZapPanel from "../components/ZapPanel";
@@ -216,6 +217,7 @@ export default function GoalDetail() {
                 <p class="whitespace-pre-wrap text-zinc-300">{card()?.description}</p>
               </section>
               <div classList={{ hidden: tab() !== "supporters" }}>
+                <SupporterHighlights supporters={supporters()} profiles={supporterProfiles()} />
                 <SupporterList supporters={supporters()} profiles={supporterProfiles()} />
               </div>
               <div classList={{ hidden: tab() !== "comments" }}>

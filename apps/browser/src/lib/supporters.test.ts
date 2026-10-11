@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { NostrEventLike } from "backr-nostr-nips";
-import { toSupporters } from "./supporters";
+import {
+  firstSupporter,
+  toSupporters,
+  topSupporters,
+  type Supporter,
+} from "./supporters";
 
 function receipt(id: string, createdAt: number, tags: string[][]): NostrEventLike {
   return {
@@ -50,5 +55,22 @@ describe("toSupporters", () => {
       200,
     );
     expect(supporters).toHaveLength(0);
+  });
+});
+
+describe("firstSupporter/topSupporters", () => {
+  const list: Supporter[] = [
+    { pubkey: "a", msats: 100n, comment: "", createdAt: 300 },
+    { pubkey: "b", msats: 500n, comment: "", createdAt: 100 },
+    { pubkey: "c", msats: 300n, comment: "", createdAt: 200 },
+  ];
+  it("finds earliest", () => {
+    expect(firstSupporter(list)?.pubkey).toBe("b");
+    expect(firstSupporter([])).toBeNull();
+  });
+  it("ranks by amount with stable tie-break", () => {
+    expect(topSupporters(list).map((s) => s.pubkey)).toEqual(["b", "c", "a"]);
+    expect(topSupporters(list, 2)).toHaveLength(2);
+    expect(topSupporters([], 3)).toEqual([]);
   });
 });

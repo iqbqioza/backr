@@ -1,18 +1,9 @@
 import { formatSats } from "backr-utils";
 import type { ProfileView } from "../lib/goals";
 import type { Supporter } from "../lib/supporters";
+import { avatarImage, displayName, shortKey } from "./people";
 
-export function shortKey(pubkey: string): string {
-  return `${pubkey.slice(0, 8)}…${pubkey.slice(-4)}`;
-}
-
-export function displayName(profiles: Map<string, ProfileView>, pubkey: string): string {
-  return profiles.get(pubkey)?.name ?? shortKey(pubkey);
-}
-
-export function avatarImage(profiles: Map<string, ProfileView>, pubkey: string): string | undefined {
-  return profiles.get(pubkey)?.image;
-}
+export { displayName, shortKey } from "./people";
 
 export default function SupporterList(props: {
   supporters: Supporter[];
@@ -20,7 +11,7 @@ export default function SupporterList(props: {
 }) {
   return (
     <section>
-      <h2 class="mb-2 text-xl font-semibold">支援者 ({props.supporters.length})</h2>
+      <h2 class="mb-2 font-semibold">支援者 ({props.supporters.length})</h2>
       {props.supporters.length === 0 ? (
         <p class="text-zinc-400">まだ支援がありません。最初の支援者になりましょう。</p>
       ) : (

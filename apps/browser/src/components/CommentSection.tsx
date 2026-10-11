@@ -11,7 +11,7 @@ import {
 } from "../lib/comments";
 import { requestDeletion } from "../lib/deletion";
 import { fetchProfiles, type ProfileView } from "../lib/goals";
-import { avatarImage, displayName } from "./SupporterList";
+import { avatarImage, displayName } from "./people";
 
 function CommentRow(props: {
   node: ThreadNode;

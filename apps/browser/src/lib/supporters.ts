@@ -56,6 +56,22 @@ export function toSupporters(
   return out.sort((a, b) => b.createdAt - a.createdAt);
 }
 
+/** 最初に支援した人 (最古。同着は合計額? 先に来た方を優先) */
+export function firstSupporter(supporters: Supporter[]): Supporter | null {
+  if (supporters.length === 0) return null;
+  return supporters.reduce((earliest, s) => (s.createdAt < earliest.createdAt ? s : earliest));
+}
+
+/** 支援額トップ n (同額は早い方を優先) */
+export function topSupporters(supporters: Supporter[], count = 3): Supporter[] {
+  return [...supporters]
+    .sort((a, b) => {
+      if (a.msats !== b.msats) return a.msats > b.msats ? -1 : 1;
+      return a.createdAt - b.createdAt;
+    })
+    .slice(0, count);
+}
+
 export interface ValidatedGoalZap {
   totalMsats: bigint;
   count: number;
