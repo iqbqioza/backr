@@ -1,14 +1,76 @@
 import { createSignal } from "solid-js";
+import {
+  getSession,
+  hasNip07,
+  loginNip07,
+  loginNsec,
+  loginReadonly,
+  logout,
+  resolvePubkeyInput,
+  resolveSecret,
+  type AuthMethod,
+} from "../lib/auth";
+import { shortKey } from "./SupporterList";
 
-const METHODS = [
-  { id: "nip07", name: "ブラウザ拡張", desc: "NIP-07 対応拡張で署名 (推奨)" },
-  { id: "nsec", name: "nsec", desc: "秘密鍵を入力して署名 (メモリ保持のみ)" },
-  { id: "readonly", name: "読み取り専用", desc: "npub で閲覧のみ" },
-];
+const METHOD_LABEL: Record<AuthMethod, string> = {
+  nip07: "拡張",
+  nsec: "nsec",
+  readonly: "閲覧専用",
+};
 
-/** ログイン UI (見た目のみ。接続処理は次のステップ) */
 export default function Header() {
   const [open, setOpen] = createSignal(false);
+  const [nsecInput, setNsecInput] = createSignal("");
+  const [npubInput, setNpubInput] = createSignal("");
+  const [notice, setNotice] = createSignal<string | null>(null);
+
+  const connectNip07 = () => {
+    if (!hasNip07() || window.nostr === undefined) {
+      setNotice("NIP-07 対応のブラウザ拡張が見つかりません");
+      return;
+    }
+    window.nostr
+      .getPublicKey()
+      .then((pubkey) => {
+        if (!/^[0-9a-f]{64}$/.test(pubkey)) {
+          setNotice("拡張から不正な公開鍵が返されました");
+          return;
+        }
+        loginNip07(pubkey);
+        setNotice(null);
+        setOpen(false);
+      })
+      .catch(() => {
+        setNotice("拡張への接続が拒否されました");
+      });
+  };
+
+  const connectNsec = () => {
+    const info = resolveSecret(nsecInput());
+    if (info === null) {
+      setNotice("nsec の形式が不正です");
+      return;
+    }
+    loginNsec(info.secretHex, info.pubkey);
+    setNsecInput("");
+    setNotice(null);
+    setOpen(false);
+  };
+
+  const connectReadonly = () => {
+    const pubkey = resolvePubkeyInput(npubInput());
+    if (pubkey === null) {
+      setNotice("npub の形式が不正です");
+      return;
+    }
+    loginReadonly(pubkey);
+    setNpubInput("");
+    setNotice(null);
+    setOpen(false);
+  };
+
+  const session = () => getSession();
+  const input = "w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm";
 
   return (
     <header class="border-b border-zinc-800">
@@ -25,15 +87,32 @@ export default function Header() {
         <a href="/about" class="text-sm text-zinc-400 hover:text-zinc-100">
           Backrとは
         </a>
-        <button
-          type="button"
-          onClick={() => {
-            setOpen(true);
-          }}
-          class="ml-auto rounded border border-zinc-600 px-3 py-1 text-sm hover:border-zinc-300"
-        >
-          ログイン
-        </button>
+        {session() === null ? (
+          <button
+            type="button"
+            onClick={() => {
+              setNotice(null);
+              setOpen(true);
+            }}
+            class="ml-auto rounded border border-zinc-600 px-3 py-1 text-sm hover:border-zinc-300"
+          >
+            ログイン
+          </button>
+        ) : (
+          <span class="ml-auto flex items-center gap-2 text-sm">
+            <span class="rounded bg-zinc-800 px-2 py-0.5 text-xs text-zinc-300">
+              {METHOD_LABEL[session()?.method ?? "readonly"]}
+            </span>
+            <span class="font-mono text-zinc-300">{shortKey(session()?.pubkey ?? "")}</span>
+            <button
+              type="button"
+              onClick={logout}
+              class="rounded border border-zinc-700 px-2 py-0.5 text-xs text-zinc-400 hover:text-zinc-100"
+            >
+              ログアウト
+            </button>
+          </span>
+        )}
       </nav>
       {open() && (
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
@@ -51,28 +130,58 @@ export default function Header() {
               </button>
             </div>
             <div class="grid gap-3">
-              {METHODS.map((method) => (
-                <div class="rounded border border-zinc-700 p-3">
-                  <div class="flex items-center gap-2">
-                    <p class="font-medium">{method.name}</p>
-                    <span class="rounded bg-zinc-700 px-2 py-0.5 text-xs text-zinc-300">
-                      近日対応
-                    </span>
-                  </div>
-                  <p class="mt-1 text-sm text-zinc-400">{method.desc}</p>
-                  <button
-                    type="button"
-                    disabled
-                    class="mt-2 rounded bg-zinc-700 px-3 py-1 text-sm opacity-50"
-                  >
-                    接続する
-                  </button>
-                </div>
-              ))}
+              <div class="rounded border border-zinc-700 p-3">
+                <p class="font-medium">ブラウザ拡張</p>
+                <p class="mt-1 text-sm text-zinc-400">NIP-07 対応拡張で署名 (推奨)</p>
+                <button
+                  type="button"
+                  onClick={connectNip07}
+                  class="mt-2 rounded bg-amber-400 px-3 py-1 text-sm font-semibold text-zinc-950"
+                >
+                  拡張に接続
+                </button>
+              </div>
+              <div class="rounded border border-zinc-700 p-3">
+                <p class="font-medium">nsec</p>
+                <p class="mt-1 text-sm text-zinc-400">秘密鍵はメモリ保持のみ。保存しません</p>
+                <input
+                  class={input}
+                  type="password"
+                  placeholder="nsec1…"
+                  value={nsecInput()}
+                  onInput={(e) => {
+                    setNsecInput(e.currentTarget.value);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={connectNsec}
+                  class="mt-2 rounded border border-zinc-600 px-3 py-1 text-sm hover:border-zinc-300"
+                >
+                  nsecでログイン
+                </button>
+              </div>
+              <div class="rounded border border-zinc-700 p-3">
+                <p class="font-medium">読み取り専用</p>
+                <p class="mt-1 text-sm text-zinc-400">npub で閲覧のみ (署名・公開不可)</p>
+                <input
+                  class={input}
+                  placeholder="npub1…"
+                  value={npubInput()}
+                  onInput={(e) => {
+                    setNpubInput(e.currentTarget.value);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={connectReadonly}
+                  class="mt-2 rounded border border-zinc-600 px-3 py-1 text-sm hover:border-zinc-300"
+                >
+                  閲覧する
+                </button>
+              </div>
             </div>
-            <p class="mt-3 text-xs text-zinc-500">
-              秘密鍵はブラウザのメモリ保持のみ。保存しません。
-            </p>
+            {notice() !== null && <p class="mt-3 text-sm text-red-400">{notice()}</p>}
           </div>
         </div>
       )}

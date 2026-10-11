@@ -6,6 +6,10 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "dependencies": {
+    "@noble/hashes": "2.4.0",
+    "@noble/secp256k1": "3.2.0"
+  },
   "scripts": {
     "build": "tsc --noEmit -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",

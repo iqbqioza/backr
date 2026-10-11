@@ -1,9 +1,16 @@
-import { decodeBare, validateGoal9041 } from "backr-nostr-nips";
+import {
+  decodeBare,
+  encodeNevent,
+  validateGoal9041,
+  type UnsignedEvent,
+} from "backr-nostr-nips";
 import { formatSats, remainingLabel } from "backr-utils";
 import { createSignal } from "solid-js";
+import { canSign, getSession, signWithSession } from "../lib/auth";
 import { DEFAULT_RELAY } from "../lib/const";
+import { publishEvent } from "../lib/relay";
+import { shortKey } from "../components/SupporterList";
 
-/** 作成フォーム: 署名・公開は次のステップ。ここでは 9041 の検証とプレビューまで */
 export default function Create() {
   const [npub, setNpub] = createSignal("");
   const [summary, setSummary] = createSignal("");
@@ -11,11 +18,16 @@ export default function Create() {
   const [goalSats, setGoalSats] = createSignal("");
   const [closedAt, setClosedAt] = createSignal("");
   const [image, setImage] = createSignal("");
+  const [unsigned, setUnsigned] = createSignal<UnsignedEvent | null>(null);
   const [preview, setPreview] = createSignal<string | null>(null);
   const [errors, setErrors] = createSignal<string[]>([]);
+  const [publishing, setPublishing] = createSignal(false);
+  const [published, setPublished] = createSignal<string | null>(null);
 
-  const resolvePubkey = (input: string): string | null => {
-    const trimmed = input.trim();
+  const authorPubkey = (): string | null => {
+    const s = getSession();
+    if (s !== null) return s.pubkey;
+    const trimmed = npub().trim();
     if (/^[0-9a-f]{64}$/.test(trimmed)) return trimmed;
     return decodeBare(trimmed, "npub");
   };
@@ -33,66 +45,117 @@ export default function Create() {
     return Number.isNaN(ms) ? null : Math.floor(ms / 1000);
   };
 
-  const onBuild = () => {
-    const pubkey = resolvePubkey(npub());
+  const buildUnsigned = (): UnsignedEvent | null => {
+    const pubkey = authorPubkey();
+    const amount = goalMsats();
     const problems: string[] = [];
-    if (pubkey === null) problems.push("作成者の npub/hex が不正です");
-    if (goalMsats() === null) problems.push("目標 sats は正の整数で入力してください");
+    if (pubkey === null) problems.push("作成者の npub/hex が不正です (ログイン時は自動設定)");
+    if (amount === null) problems.push("目標 sats は正の整数で入力してください");
     if (closedAt().trim().length > 0 && closedAtSec() === null) {
       problems.push("締切の日付が不正です");
     }
     if (problems.length > 0) {
       setErrors(problems);
-      setPreview(null);
-      return;
+      return null;
     }
     const tags: string[][] = [
       ["relays", DEFAULT_RELAY],
-      ["amount", (goalMsats() ?? 0n).toString()],
+      ["amount", (amount ?? 0n).toString()],
       ["t", "backr"],
     ];
     const closed = closedAtSec();
     if (closed !== null) tags.push(["closed_at", String(closed)]);
     if (summary().trim().length > 0) tags.push(["summary", summary().trim()]);
     if (image().trim().length > 0) tags.push(["image", image().trim()]);
-    const event = {
-      id: "0".repeat(64),
+    return {
       pubkey: pubkey ?? "",
       created_at: Math.floor(Date.now() / 1000),
       kind: 9041,
       tags,
       content: description(),
-      sig: "0".repeat(64),
     };
-    const result = validateGoal9041(event);
-    if (!result.ok) {
-      setErrors(result.errors);
+  };
+
+  const onPreview = () => {
+    setPublished(null);
+    const draft = buildUnsigned();
+    if (draft === null) {
+      setUnsigned(null);
+      setPreview(null);
+      return;
+    }
+    const check = validateGoal9041({ ...draft, id: "0".repeat(64), sig: "0".repeat(64) });
+    if (!check.ok) {
+      setErrors(check.errors);
+      setUnsigned(null);
       setPreview(null);
       return;
     }
     setErrors([]);
-    setPreview(JSON.stringify(event, null, 2));
+    setUnsigned(draft);
+    setPreview(JSON.stringify({ ...draft, id: "(署名時に確定)", sig: "(署名時に確定)" }, null, 2));
+  };
+
+  const onPublish = () => {
+    const draft = unsigned();
+    if (draft === null || publishing()) return;
+    setPublishing(true);
+    setErrors([]);
+    signWithSession(draft)
+      .then((signed) => {
+        if (signed === null) {
+          setErrors(["署名に失敗しました (閲覧専用または未ログイン)"]);
+          return;
+        }
+        return publishEvent(DEFAULT_RELAY, signed).then((result) => {
+          if (!result.accepted) {
+            setErrors([`リレーに拒否されました: ${result.message}`]);
+            return;
+          }
+          const nevent = encodeNevent({ id: signed.id, relays: [DEFAULT_RELAY] });
+          setPublished(nevent);
+        });
+      })
+      .catch((err: unknown) => {
+        setErrors([err instanceof Error ? err.message : "公開に失敗しました"]);
+      })
+      .finally(() => {
+        setPublishing(false);
+      });
   };
 
   const input = "w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2";
   const nowSec = () => Math.floor(Date.now() / 1000);
+  const session = () => getSession();
 
   return (
     <div>
       <h1 class="mb-4 text-2xl font-bold">プロジェクトを作る</h1>
+      {session() === null && (
+        <p class="mb-4 rounded border border-zinc-700 p-3 text-sm text-zinc-300">
+          公開にはログインが必要です。ヘッダーの「ログイン」から接続してください。
+          下書きの確認だけならこのまま入力できます。
+        </p>
+      )}
       <div class="grid gap-6 md:grid-cols-2">
         <div class="grid content-start gap-3">
-          <label class="text-sm">
-            作成者 (npub / hex)
-            <input
-              class={input}
-              placeholder="npub1…"
-              value={npub()}
-              onInput={(e) => {
-                setNpub(e.currentTarget.value);
-              }}
-            />
-          </label>
+          {session() === null ? (
+            <label class="text-sm">
+              作成者 (npub / hex)
+              <input
+                class={input}
+                placeholder="npub1…"
+                value={npub()}
+                onInput={(e) => {
+                  setNpub(e.currentTarget.value);
+                }}
+              />
+            </label>
+          ) : (
+            <p class="rounded border border-zinc-700 p-3 font-mono text-sm text-zinc-300">
+              作成者: {shortKey(session()?.pubkey ?? "")}
+            </p>
+          )}
           <label class="text-sm">
             短い説明 (summary)
             <input
@@ -154,8 +217,8 @@ export default function Create() {
           </label>
           <button
             type="button"
-            onClick={onBuild}
-            class="rounded bg-amber-400 px-4 py-2 font-semibold text-zinc-950"
+            onClick={onPreview}
+            class="rounded border border-zinc-600 px-4 py-2 font-semibold hover:border-zinc-300"
           >
             イベントを確認する
           </button>
@@ -186,7 +249,21 @@ export default function Create() {
           {preview() !== null && (
             <pre class="mt-3 max-h-64 overflow-auto rounded bg-zinc-900 p-4 text-xs">{preview()}</pre>
           )}
-          <p class="mt-3 text-sm text-zinc-400">署名・リレー公開は次のステップで対応します。</p>
+          {unsigned() !== null && canSign() && published() === null && (
+            <button
+              type="button"
+              onClick={onPublish}
+              disabled={publishing()}
+              class="mt-3 w-full rounded bg-amber-400 px-4 py-2 font-semibold text-zinc-950 disabled:opacity-50"
+            >
+              {publishing() ? "公開中…" : `${DEFAULT_RELAY} に公開する`}
+            </button>
+          )}
+          {published() !== null && (
+            <p class="mt-3 rounded border border-green-800 bg-green-950/40 p-3 text-sm text-green-300">
+              公開しました。 <a class="underline" href={`/g/${published()}`}>詳細ページを開く</a>
+            </p>
+          )}
         </div>
       </div>
     </div>

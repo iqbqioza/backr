@@ -3,6 +3,61 @@ import { DEFAULT_RELAY } from "./const";
 
 export type RelayFilter = Record<string, unknown>;
 
+/** リレーにイベントを公開し OK を待つ */
+export function publishEvent(
+  relayUrl: string,
+  event: NostrEventLike,
+  timeoutMs = 10000,
+): Promise<{ accepted: boolean; message: string }> {
+  return new Promise((resolve, reject) => {
+    let socket: WebSocket;
+    try {
+      socket = new WebSocket(relayUrl);
+    } catch (err) {
+      reject(err instanceof Error ? err : new Error("connect failed"));
+      return;
+    }
+    const timer = setTimeout(() => {
+      try {
+        socket.close();
+      } catch {
+        // noop
+      }
+      reject(new Error("publish timeout"));
+    }, timeoutMs);
+    const finish = (fn: () => void) => {
+      clearTimeout(timer);
+      try {
+        socket.close();
+      } catch {
+        // noop
+      }
+      fn();
+    };
+    socket.addEventListener("open", () => {
+      socket.send(JSON.stringify(["EVENT", event]));
+    });
+    socket.addEventListener("message", (msg) => {
+      const parsed = parseRelayMessage(String(msg.data));
+      if (parsed === null) return;
+      if (parsed.type === "OK" && parsed.eventId === event.id) {
+        finish(() => {
+          resolve({ accepted: parsed.accepted, message: parsed.message });
+        });
+      } else if (parsed.type === "CLOSED") {
+        finish(() => {
+          reject(new Error(parsed.message.length > 0 ? parsed.message : "relay closed"));
+        });
+      }
+    });
+    socket.addEventListener("error", () => {
+      finish(() => {
+        reject(new Error("relay connection failed"));
+      });
+    });
+  });
+}
+
 /** REQ を投げて EOSE/CLOSED までの EVENT を集める */
 export function fetchEvents(
   filters: RelayFilter[],
