@@ -121,6 +121,7 @@ export default function CommentSection(props: {
   relayUrl: string;
   goalId: string;
   goalAuthor: string;
+  onCount?: (count: number) => void;
 }) {
   const [comments, setComments] = createSignal<CommentView[]>([]);
   const [profiles, setProfiles] = createSignal(new Map<string, ProfileView>());
@@ -145,6 +146,7 @@ export default function CommentSection(props: {
     fetchComments(props.relayUrl, props.goalId)
       .then((fetched) => {
         setComments(fetched);
+        props.onCount?.(fetched.length);
         return fetchProfiles(
           props.relayUrl,
           fetched.map((c) => c.pubkey),
@@ -172,7 +174,9 @@ export default function CommentSection(props: {
       content: body(),
     })
       .then((view) => {
-        setComments([...comments(), view].sort((a, b) => a.createdAt - b.createdAt));
+        const next = [...comments(), view].sort((a, b) => a.createdAt - b.createdAt);
+        setComments(next);
+        props.onCount?.(next.length);
         setBody("");
         setReplyTo(null);
       })
@@ -195,7 +199,9 @@ export default function CommentSection(props: {
     setError(null);
     requestDeletion(props.relayUrl, [comment.id], "comment deleted by author")
       .then(() => {
-        setComments(comments().filter((c) => c.id !== comment.id));
+        const next = comments().filter((c) => c.id !== comment.id);
+        setComments(next);
+        props.onCount?.(next.length);
         setConfirming(null);
       })
       .catch((err: unknown) => {
@@ -257,7 +263,6 @@ function ReplyForm(props: {
 
   return (
     <section>
-      <h2 class="mb-2 text-xl font-semibold">コメント ({comments().length})</h2>
       {loading() && <p class="text-zinc-400">読み込み中…</p>}
       <ul class="grid gap-2 border-l-2 border-zinc-800 pl-2">
         {rows().map((node) => (

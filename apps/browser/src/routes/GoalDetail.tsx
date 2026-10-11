@@ -41,6 +41,8 @@ export default function GoalDetail() {
   const [confirming, setConfirming] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
   const [deleted, setDeleted] = createSignal(false);
+  const [tab, setTab] = createSignal<"desc" | "supporters" | "comments" | "reports">("desc");
+  const [commentCount, setCommentCount] = createSignal(0);
 
   const load = () => {
     setLoading(true);
@@ -144,27 +146,63 @@ export default function GoalDetail() {
           <h1 class="mt-4 text-2xl font-bold md:text-3xl">{card()?.title}</h1>
           <div class="mt-3 grid gap-8 lg:grid-cols-3">
             <div class="grid content-start gap-8 lg:col-span-2">
-              <section>
-                <h2 class="mb-2 text-xl font-semibold">説明</h2>
+              <div class="flex gap-1 overflow-x-auto border-b border-zinc-800">
+                {(
+                  [
+                    ["desc", "説明"],
+                    ["supporters", `支援者 (${supporters().length})`],
+                    ["comments", `コメント (${commentCount()})`],
+                    ["reports", `活動報告 (${reports().length})`],
+                  ] as const
+                ).map(([id, label]) => (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTab(id);
+                    }}
+                    class={`shrink-0 border-b-2 px-4 py-2 text-sm font-medium ${
+                      tab() === id
+                        ? "border-amber-400 text-amber-300"
+                        : "border-transparent text-zinc-400 hover:text-zinc-100"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <section classList={{ hidden: tab() !== "desc" }}>
                 <p class="whitespace-pre-wrap text-zinc-300">{card()?.description}</p>
               </section>
-              <SupporterList supporters={supporters()} profiles={supporterProfiles()} />
-              <CommentSection relayUrl={relay()} goalId={card()?.id ?? ""} goalAuthor={card()?.pubkey ?? ""} />
-              {isAuthor() && (
-                <ReportForm
+              <div classList={{ hidden: tab() !== "supporters" }}>
+                <SupporterList supporters={supporters()} profiles={supporterProfiles()} />
+              </div>
+              <div classList={{ hidden: tab() !== "comments" }}>
+                <CommentSection
                   relayUrl={relay()}
                   goalId={card()?.id ?? ""}
-                  onPosted={(report) => {
-                    setReports(mergeReports(reports(), [report]));
-                  }}
+                  goalAuthor={card()?.pubkey ?? ""}
+                  onCount={setCommentCount}
                 />
-              )}
-              <ReportList
-                reports={reports()}
-                relayUrl={relay()}
-                goalId={card()?.id ?? ""}
-                onChange={setReports}
-              />
+              </div>
+              <div classList={{ hidden: tab() !== "reports" }}>
+                <div class="grid gap-6">
+                  {isAuthor() && (
+                    <ReportForm
+                      relayUrl={relay()}
+                      goalId={card()?.id ?? ""}
+                      onPosted={(report) => {
+                        setReports(mergeReports(reports(), [report]));
+                      }}
+                    />
+                  )}
+                  <ReportList
+                    reports={reports()}
+                    relayUrl={relay()}
+                    goalId={card()?.id ?? ""}
+                    onChange={setReports}
+                  />
+                </div>
+              </div>
             </div>
             <aside class="grid content-start gap-4 self-start lg:sticky lg:top-4">
               <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
