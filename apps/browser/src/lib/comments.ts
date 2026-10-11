@@ -26,6 +26,72 @@ export async function fetchComments(
   return out.sort((a, b) => a.createdAt - b.createdAt);
 }
 
+export const MAX_THREAD_DEPTH = 3;
+
+export interface ThreadNode {
+  comment: CommentView;
+  depth: number;
+  children: ThreadNode[];
+}
+
+/** 子孫コメント数 (自分は含まず) */
+export function countDescendants(node: ThreadNode): number {
+  return node.children.reduce((sum, child) => sum + 1 + countDescendants(child), 0);
+}
+
+/**
+ * ツリーを深さ優先で平坦化する (純粋関数)。
+ * collapsed に含まれるノードの子孫は除外する。
+ */
+export function flattenVisible(nodes: ThreadNode[], collapsed: Set<string>): ThreadNode[] {
+  const out: ThreadNode[] = [];
+  const walk = (list: ThreadNode[], hidden: boolean) => {
+    for (const node of list) {
+      if (!hidden) out.push(node);
+      walk(node.children, hidden || collapsed.has(node.comment.id));
+    }
+  };
+  walk(nodes, false);
+  return out;
+}
+
+/**
+ * コメントをスレッド化する (純粋関数)。
+ * - 親が goal・不明・自分自身のものはトップレベル
+ * - 循環参照は子から外す
+ * - 深さは MAX_THREAD_DEPTH で頭打ち (それ以深は同階層に畳む)
+ */
+export function buildCommentTree(comments: CommentView[], goalId: string): ThreadNode[] {
+  const byId = new Map(comments.map((c) => [c.id, c]));
+  const childrenOf = new Map<string, CommentView[]>();
+  const roots: CommentView[] = [];
+  for (const comment of comments) {
+    const parentId = comment.parentId;
+    if (parentId === null || parentId === goalId || parentId === comment.id || !byId.has(parentId)) {
+      roots.push(comment);
+    } else {
+      const siblings = childrenOf.get(parentId) ?? [];
+      siblings.push(comment);
+      childrenOf.set(parentId, siblings);
+    }
+  }
+  const byTime = (a: CommentView, b: CommentView) => a.createdAt - b.createdAt;
+  roots.sort(byTime);
+  for (const siblings of childrenOf.values()) siblings.sort(byTime);
+
+  const build = (comment: CommentView, depth: number, ancestors: Set<string>): ThreadNode => {
+    const next = new Set(ancestors);
+    next.add(comment.id);
+    const children: ThreadNode[] = [];
+    for (const child of childrenOf.get(comment.id) ?? []) {
+      if (next.has(child.id)) continue;
+      children.push(build(child, Math.min(depth + 1, MAX_THREAD_DEPTH), next));
+    }
+    return { comment, depth, children };
+  };
+  return roots.map((root) => build(root, 1, new Set()));
+}
+
 /** コメント投稿 (トップレベル or 返信)。署名ログイン必須 */
 export async function postComment(args: {
   relayUrl: string;
