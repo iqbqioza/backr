@@ -233,8 +233,12 @@ export default function Create() {
         <div>
           <h2 class="mb-2 font-semibold">プレビュー</h2>
           <div class="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-            {image().trim().length > 0 && (
+            {image().trim().length > 0 ? (
               <img src={image().trim()} alt="" class="mb-3 h-40 w-full rounded object-cover" />
+            ) : (
+              <div class="mb-3 flex h-40 w-full items-center justify-center rounded bg-gradient-to-br from-zinc-800 to-zinc-900 text-4xl">
+                ⚡
+              </div>
             )}
             <p class="text-lg font-semibold">{summary().trim() || "タイトル未入力"}</p>
             <p class="mt-1 line-clamp-3 whitespace-pre-wrap text-sm text-zinc-400">

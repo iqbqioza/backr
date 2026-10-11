@@ -141,8 +141,12 @@ export default function GoalDetail() {
       )}
       {card() !== null && (
         <article>
-          {card()?.image !== undefined && (
+          {card()?.image !== undefined ? (
             <img src={card()?.image} alt="" class="h-64 w-full rounded-xl object-cover" />
+          ) : (
+            <div class="flex h-64 w-full items-center justify-center rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 text-7xl">
+              ⚡
+            </div>
           )}
           <h1 class="mt-4 text-2xl font-bold md:text-3xl">{card()?.title}</h1>
           <div class="mt-3 grid gap-8 lg:grid-cols-3">
