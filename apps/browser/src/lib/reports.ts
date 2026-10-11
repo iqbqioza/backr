@@ -29,5 +29,5 @@ export async function postReport(args: {
   if (signed === null) throw new Error("署名に失敗しました");
   const result = await publishEvent(args.relayUrl, signed);
   if (!result.accepted) throw new Error(`リレーに拒否されました: ${result.message}`);
-  return { id: signed.id, title: args.title, createdAt: signed.created_at };
+  return { id: signed.id, title: args.title, createdAt: signed.created_at, content: args.content };
 }

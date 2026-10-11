@@ -72,6 +72,24 @@ export interface ReportData {
   id: string;
   title: string;
   createdAt: number;
+  content: string;
+  image?: string;
+}
+
+/** 30023 イベントを表示用に整形 (goal 不一致は null) */
+export function toReportData(ev: NostrEventLike, goalId: string): ReportData | null {
+  if (ev.kind !== 30023) return null;
+  const linked = ev.tags.some((t) => t[0] === "goal" && t[1] === goalId);
+  if (!linked) return null;
+  const report: ReportData = {
+    id: ev.id,
+    title: ev.tags.find((t) => t[0] === "title")?.[1] ?? "活動報告",
+    createdAt: ev.created_at,
+    content: ev.content,
+  };
+  const image = ev.tags.find((t) => t[0] === "image")?.[1];
+  if (image !== undefined && image.length > 0) report.image = image;
+  return report;
 }
 
 /** 活動報告: kind:30023 のうち goal タグが goalId のもの */
@@ -79,10 +97,8 @@ export async function fetchReports(relayUrl: string, goalId: string): Promise<Re
   const events = await fetchEvents([{ kinds: [30023], limit: 50 }], relayUrl);
   const reports: ReportData[] = [];
   for (const ev of events) {
-    const linked = ev.tags.some((t) => t[0] === "goal" && t[1] === goalId);
-    if (!linked) continue;
-    const title = ev.tags.find((t) => t[0] === "title")?.[1] ?? "活動報告";
-    reports.push({ id: ev.id, title, createdAt: ev.created_at });
+    const report = toReportData(ev, goalId);
+    if (report !== null) reports.push(report);
   }
   return reports.sort((a, b) => b.createdAt - a.createdAt);
 }
@@ -123,10 +139,30 @@ export async function fetchProfile(
   relayUrl: string,
   pubkey: string,
 ): Promise<ProfileView | null> {
-  const events = await fetchEvents([{ kinds: [0], authors: [pubkey], limit: 1 }], relayUrl);
-  const found = events.find((ev) => ev.kind === 0);
-  if (found === undefined) return null;
-  return parseProfile(pubkey, found.content);
+  const profiles = await fetchProfiles(relayUrl, [pubkey]);
+  return profiles.get(pubkey) ?? null;
+}
+
+/** kind:0 群を pubkey → ProfileView に整形 (純粋関数) */
+export function profilesByKey(events: NostrEventLike[]): Map<string, ProfileView> {
+  const map = new Map<string, ProfileView>();
+  for (const ev of events) {
+    if (ev.kind !== 0 || map.has(ev.pubkey)) continue;
+    const profile = parseProfile(ev.pubkey, ev.content);
+    if (profile !== null) map.set(ev.pubkey, profile);
+  }
+  return map;
+}
+
+/** 複数プロフィールを一括取得 */
+export async function fetchProfiles(
+  relayUrl: string,
+  pubkeys: string[],
+): Promise<Map<string, ProfileView>> {
+  const unique = [...new Set(pubkeys)];
+  if (unique.length === 0) return new Map();
+  const events = await fetchEvents([{ kinds: [0], authors: unique, limit: unique.length }], relayUrl);
+  return profilesByKey(events);
 }
 
 export type SortMode = "new" | "progress" | "deadline";

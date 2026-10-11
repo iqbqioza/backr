@@ -18,6 +18,7 @@ import {
   fetchGoalById,
   fetchGoalTally,
   fetchProfile,
+  fetchProfiles,
   fetchReports,
   type GoalCardData,
   type ProfileView,
@@ -31,6 +32,7 @@ export default function GoalDetail() {
   const [card, setCard] = createSignal<GoalCardData | null>(null);
   const [raised, setRaised] = createSignal(0n);
   const [supporters, setSupporters] = createSignal<Supporter[]>([]);
+  const [supporterProfiles, setSupporterProfiles] = createSignal(new Map<string, ProfileView>());
   const [reports, setReports] = createSignal<ReportData[]>([]);
   const [profile, setProfile] = createSignal<ProfileView | null>(null);
   const [loading, setLoading] = createSignal(true);
@@ -82,7 +84,11 @@ export default function GoalDetail() {
     ]).then(([tally, fetchedSupporters]) => {
       setRaised(tally.totalMsats);
       setSupporters(fetchedSupporters);
-    });
+      return fetchProfiles(
+        relay(),
+        fetchedSupporters.map((s) => s.pubkey),
+      );
+    }).then(setSupporterProfiles);
   };
 
   onMount(load);
@@ -174,7 +180,7 @@ export default function GoalDetail() {
             <h2 class="mb-2 text-xl font-semibold">説明</h2>
             <p class="whitespace-pre-wrap text-zinc-300">{card()?.description}</p>
           </section>
-          <SupporterList supporters={supporters()} />
+          <SupporterList supporters={supporters()} profiles={supporterProfiles()} />
           <CommentSection relayUrl={relay()} goalId={card()?.id ?? ""} goalAuthor={card()?.pubkey ?? ""} />
           {isAuthor() && (
             <ReportForm

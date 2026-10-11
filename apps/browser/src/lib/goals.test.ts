@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   parseProfile,
+  profilesByKey,
   sortGoalCards,
   toGoalCard,
+  toReportData,
   type GoalCardData,
 } from "./goals";
 
@@ -67,6 +69,54 @@ describe("sortGoalCards", () => {
   });
   it("sorts by deadline (no deadline last)", () => {
     expect(sortGoalCards(cards, tallies, "deadline").map((c) => c.id)).toEqual(["b", "a", "c"]);
+  });
+});
+
+describe("toReportData", () => {
+  const goalId = "a".repeat(64);
+  const ev = {
+    id: "b".repeat(64),
+    pubkey: "c".repeat(64),
+    created_at: 100,
+    kind: 30023,
+    tags: [
+      ["d", "backr-1"],
+      ["title", "進捗"],
+      ["goal", goalId, ""],
+    ],
+    content: "本文です。",
+    sig: "d".repeat(128),
+  };
+  it("extracts body and matches goal", () => {
+    expect(toReportData(ev, goalId)).toEqual({
+      id: ev.id,
+      title: "進捗",
+      createdAt: 100,
+      content: "本文です。",
+    });
+    expect(toReportData(ev, "f".repeat(64))).toBeNull();
+    expect(toReportData({ ...ev, kind: 1 }, goalId)).toBeNull();
+  });
+});
+
+describe("profilesByKey", () => {
+  it("indexes first profile per pubkey", () => {
+    const ev = (content: string) => ({
+      id: "b".repeat(64),
+      pubkey: "c".repeat(64),
+      created_at: 1,
+      kind: 0,
+      tags: [],
+      content,
+      sig: "d".repeat(128),
+    });
+    const map = profilesByKey([
+      ev(JSON.stringify({ name: "アリス" })),
+      ev(JSON.stringify({ name: "上書き" })),
+      { ...ev("{}"), kind: 1 },
+    ]);
+    expect(map.size).toBe(1);
+    expect(map.get("c".repeat(64))?.name).toBe("アリス");
   });
 });
 

@@ -1,7 +1,8 @@
 import { createSignal, onMount } from "solid-js";
 import { canSign } from "../lib/auth";
 import { fetchComments, postComment, type CommentView } from "../lib/comments";
-import { shortKey } from "./SupporterList";
+import { fetchProfiles, type ProfileView } from "../lib/goals";
+import { avatarImage, displayName } from "./SupporterList";
 
 export default function CommentSection(props: {
   relayUrl: string;
@@ -9,6 +10,7 @@ export default function CommentSection(props: {
   goalAuthor: string;
 }) {
   const [comments, setComments] = createSignal<CommentView[]>([]);
+  const [profiles, setProfiles] = createSignal(new Map<string, ProfileView>());
   const [loading, setLoading] = createSignal(true);
   const [body, setBody] = createSignal("");
   const [replyTo, setReplyTo] = createSignal<CommentView | null>(null);
@@ -18,7 +20,14 @@ export default function CommentSection(props: {
   const load = () => {
     setLoading(true);
     fetchComments(props.relayUrl, props.goalId)
-      .then(setComments)
+      .then((fetched) => {
+        setComments(fetched);
+        return fetchProfiles(
+          props.relayUrl,
+          fetched.map((c) => c.pubkey),
+        );
+      })
+      .then(setProfiles)
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : "取得に失敗しました");
       })
@@ -62,30 +71,41 @@ export default function CommentSection(props: {
       {loading() && <p class="text-zinc-400">読み込み中…</p>}
       <ul class="grid gap-2">
         {comments().map((comment) => (
-          <li class="rounded-lg border border-zinc-800 bg-zinc-900 p-3">
-            <div class="flex items-center gap-2">
-              <p class="font-mono text-xs text-zinc-500">{shortKey(comment.pubkey)}</p>
-              {isReply(comment) && (
-                <span class="rounded bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-400">返信</span>
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  setReplyTo(comment);
-                }}
-                class="ml-auto text-xs text-zinc-400 hover:text-zinc-100"
-              >
-                返信する
-              </button>
+          <li class="flex items-start gap-3 rounded-lg border border-zinc-800 bg-zinc-900 p-3">
+            {avatarImage(profiles(), comment.pubkey) !== undefined ? (
+              <img
+                src={avatarImage(profiles(), comment.pubkey)}
+                alt=""
+                class="h-8 w-8 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <span class="h-8 w-8 shrink-0 rounded-full bg-gradient-to-br from-zinc-500 to-zinc-700" />
+            )}
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2">
+                <p class="truncate text-sm font-medium">{displayName(profiles(), comment.pubkey)}</p>
+                {isReply(comment) && (
+                  <span class="rounded bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-400">返信</span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReplyTo(comment);
+                  }}
+                  class="ml-auto shrink-0 text-xs text-zinc-400 hover:text-zinc-100"
+                >
+                  返信する
+                </button>
+              </div>
+              <p class="mt-1 whitespace-pre-wrap break-words text-sm text-zinc-200">{comment.content}</p>
             </div>
-            <p class="mt-1 whitespace-pre-wrap break-words text-sm text-zinc-200">{comment.content}</p>
           </li>
         ))}
       </ul>
       <div class="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-3">
         {replyTo() !== null && (
           <p class="mb-2 text-xs text-zinc-400">
-            {shortKey(replyTo()?.pubkey ?? "")} への返信
+            {displayName(profiles(), replyTo()?.pubkey ?? "")} への返信
             <button
               type="button"
               onClick={() => {
