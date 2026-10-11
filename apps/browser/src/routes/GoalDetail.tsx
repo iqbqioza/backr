@@ -56,17 +56,12 @@ export default function GoalDetail() {
           return;
         }
         setCard(found);
-        return Promise.all([
-          fetchGoalTally(url, goalId, found.closedAt),
-          fetchSupporters(url, goalId, found.closedAt),
-          fetchReports(url, goalId),
-          fetchProfile(url, found.pubkey),
-        ]).then(([tally, fetchedSupporters, fetchedReports, fetchedProfile]) => {
-          setRaised(tally.totalMsats);
-          setSupporters(fetchedSupporters);
-          setReports(fetchedReports);
-          setProfile(fetchedProfile);
-        });
+        return Promise.all([refreshStats(), fetchReports(url, goalId), fetchProfile(url, found.pubkey)]).then(
+          ([, fetchedReports, fetchedProfile]) => {
+            setReports(fetchedReports);
+            setProfile(fetchedProfile);
+          },
+        );
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : "取得に失敗しました");
@@ -74,6 +69,18 @@ export default function GoalDetail() {
       .finally(() => {
         setLoading(false);
       });
+  };
+
+  const refreshStats = () => {
+    const current = card();
+    if (current === null) return Promise.resolve();
+    return Promise.all([
+      fetchGoalTally(relay(), current.id, current.closedAt),
+      fetchSupporters(relay(), current.id, current.closedAt),
+    ]).then(([tally, fetchedSupporters]) => {
+      setRaised(tally.totalMsats);
+      setSupporters(fetchedSupporters);
+    });
   };
 
   onMount(load);
@@ -151,7 +158,16 @@ export default function GoalDetail() {
               <ProgressMeter raisedMsats={raised()} goalMsats={card()?.goalMsats ?? 0n} />
             </div>
           </div>
-          <ZapPanel goalMsats={card()?.goalMsats ?? 0n} />
+          <ZapPanel
+            goalId={card()?.id ?? ""}
+            recipientPubkey={card()?.pubkey ?? ""}
+            profile={profile()}
+            relays={card()?.relays ?? []}
+            goalMsats={card()?.goalMsats ?? 0n}
+            onPaid={() => {
+              void refreshStats();
+            }}
+          />
           <section>
             <h2 class="mb-2 text-xl font-semibold">説明</h2>
             <p class="whitespace-pre-wrap text-zinc-300">{card()?.description}</p>
