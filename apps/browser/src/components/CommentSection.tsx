@@ -1,6 +1,7 @@
 import { createSignal, onMount } from "solid-js";
-import { canSign } from "../lib/auth";
+import { canSign, getSession } from "../lib/auth";
 import { fetchComments, postComment, type CommentView } from "../lib/comments";
+import { requestDeletion } from "../lib/deletion";
 import { fetchProfiles, type ProfileView } from "../lib/goals";
 import { avatarImage, displayName } from "./SupporterList";
 
@@ -15,6 +16,8 @@ export default function CommentSection(props: {
   const [body, setBody] = createSignal("");
   const [replyTo, setReplyTo] = createSignal<CommentView | null>(null);
   const [posting, setPosting] = createSignal(false);
+  const [confirming, setConfirming] = createSignal<string | null>(null);
+  const [working, setWorking] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
 
   const load = () => {
@@ -65,6 +68,28 @@ export default function CommentSection(props: {
   const isReply = (comment: CommentView) =>
     comment.parentId !== null && comment.parentId !== props.goalId;
 
+  const isMine = (comment: CommentView) => {
+    const session = getSession();
+    return session !== null && session.method !== "readonly" && session.pubkey === comment.pubkey;
+  };
+
+  const remove = (comment: CommentView) => {
+    if (working()) return;
+    setWorking(true);
+    setError(null);
+    requestDeletion(props.relayUrl, [comment.id], "comment deleted by author")
+      .then(() => {
+        setComments(comments().filter((c) => c.id !== comment.id));
+        setConfirming(null);
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : "削除に失敗しました");
+      })
+      .finally(() => {
+        setWorking(false);
+      });
+  };
+
   return (
     <section>
       <h2 class="mb-2 text-xl font-semibold">コメント ({comments().length})</h2>
@@ -96,6 +121,38 @@ export default function CommentSection(props: {
                 >
                   返信する
                 </button>
+                {isMine(comment) &&
+                  (confirming() === comment.id ? (
+                    <span class="flex shrink-0 items-center gap-1 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => remove(comment)}
+                        disabled={working()}
+                        class="rounded bg-red-600 px-2 py-0.5 font-semibold text-white disabled:opacity-50"
+                      >
+                        削除
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConfirming(null);
+                        }}
+                        class="text-zinc-400 hover:text-zinc-100"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setConfirming(comment.id);
+                      }}
+                      class="shrink-0 text-xs text-red-400 hover:text-red-300"
+                    >
+                      削除
+                    </button>
+                  ))}
               </div>
               <p class="mt-1 whitespace-pre-wrap break-words text-sm text-zinc-200">{comment.content}</p>
             </div>
