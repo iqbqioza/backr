@@ -62,7 +62,7 @@ export default function Home() {
     <div>
       <RelayBar relay={relay()} onChange={setRelay} />
       {loading() && <Loading />}
-      {error() !== null && !loading() && <ErrorState message={`リレー取得失敗: ${error()}`} onRetry={load} />}
+      {error() !== null && !loading() && <ErrorState message={`Relay fetch failed: ${error()}`} onRetry={load} />}
       {!loading() && error() === null && cards().length === 0 && (
         <EmptyState message='No projects yet. Publish the first one from "Start a project".' />
       )}
@@ -105,9 +105,9 @@ export default function Home() {
                   </div>
                   <p class="mt-2 text-lg font-semibold">{formatSats(raised)}</p>
                   <p class="mt-1 text-sm text-zinc-400">
-                    {zap?.count ?? 0}人が支援 /{" "}
+                    {zap?.count ?? 0} supporters /{" "}
                     {featured.closedAt === undefined
-                      ? "期限なし"
+                      ? "No deadline"
                       : remainingLabel(Math.floor(Date.now() / 1000), featured.closedAt)}
                   </p>
                 </div>

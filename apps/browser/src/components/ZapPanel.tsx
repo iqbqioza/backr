@@ -53,18 +53,18 @@ export default function ZapPanel(props: {
         ? resolvePayTargetFromLud06(props.profile.lud06)
         : null);
     if (target === null) {
-      setError("作成者に送金先 (lud16/lud06) がありません");
+      setError("No payment target (lud16/lud06) for the creator");
       return;
     }
     const amountMsats = BigInt(selected()) * 1000n;
     setPhase("working");
     setError(null);
-    setStep("送金先を確認しています…");
+    setStep("Checking payment target…");
     fetchLnurlPay(target.payUrl)
       .then((info) => {
         const rangeError = checkAmountRange(amountMsats, info);
         if (rangeError !== null) throw new Error(rangeError);
-        setStep("zap request に署名しています…");
+        setStep("Signing zap request…");
         return signZapRequest({
           recipientPubkey: props.recipientPubkey,
           goalId: props.goalId,
@@ -73,7 +73,7 @@ export default function ZapPanel(props: {
           lnurl: target.lnurl,
           comment: comment(),
         }).then((signed) => {
-          setStep("インボイスを取得しています…");
+          setStep("Requesting invoice…");
           return requestZapInvoice(info.callback, amountMsats, signed.zapRequest, signed.lnurl);
         });
       })
@@ -82,7 +82,7 @@ export default function ZapPanel(props: {
         setPhase("invoice");
       })
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : "送金手続きに失敗しました");
+        setError(err instanceof Error ? err.message : "Payment failed");
         setPhase("idle");
       });
   };
@@ -91,7 +91,7 @@ export default function ZapPanel(props: {
     const pr = invoice();
     if (pr === null) return;
     if (typeof navigator === "undefined" || navigator.clipboard === undefined) {
-      setError("コピーできません。インボイスを長押し等でコピーしてください");
+      setError("Cannot copy. Long-press invoice to copy");
       return;
     }
     navigator.clipboard
@@ -100,7 +100,7 @@ export default function ZapPanel(props: {
         setCopied(true);
       })
       .catch(() => {
-        setError("コピーできませんでした");
+        setError("Could not copy");
       });
   };
 
@@ -114,7 +114,7 @@ export default function ZapPanel(props: {
 
   const onShare = () => {
     if (typeof navigator === "undefined" || navigator.clipboard === undefined) {
-      setError("コピーできませんでした");
+      setError("Could not copy");
       return;
     }
     const url = typeof window !== "undefined" ? window.location.href : "";
@@ -125,13 +125,13 @@ export default function ZapPanel(props: {
         setShared(true);
       })
       .catch(() => {
-        setError("コピーできませんでした");
+        setError("Could not copy");
       });
   };
 
   return (
     <section class="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-      <h2 class="font-semibold">このプロジェクトを支援する</h2>
+      <h2 class="font-semibold">Support this project</h2>
       {props.ended ? (
         <p class="mt-2 text-sm text-zinc-400">
           Funding closed. Zaps after tally are not counted.
@@ -140,7 +140,7 @@ export default function ZapPanel(props: {
         <div>
           <p class="mt-2 text-sm text-zinc-300">
             {formatSats(BigInt(selected()) * 1000n)} のインボイスを発行しました。
-            ウォレットで支払ってください。
+            Please pay with your wallet.
           </p>
           <p class="mt-2 break-all rounded bg-zinc-950 p-3 font-mono text-xs text-zinc-300">
             {invoice()}
@@ -151,25 +151,25 @@ export default function ZapPanel(props: {
               onClick={onCopy}
               class="rounded border border-zinc-600 px-3 py-1.5 text-sm hover:border-zinc-300"
             >
-              {copied() ? "コピーしました" : "インボイスをコピー"}
+              {copied() ? "Copied" : "Copy invoice"}
             </button>
             <button
               type="button"
               onClick={onShare}
               class="rounded border border-zinc-600 px-3 py-1.5 text-sm hover:border-zinc-300"
             >
-              {shared() ? "シェア文をコピーしました" : "応援をシェアする"}
+              {shared() ? "Share text copied" : "Share your support"}
             </button>
             <button
               type="button"
               onClick={onConfirmPaid}
               class="rounded bg-amber-400 px-3 py-1.5 text-sm font-semibold text-zinc-950"
             >
-              支払いを確認 (集計を更新)
+              Confirm payment (update tally)
             </button>
           </div>
           <p class="mt-2 text-xs text-zinc-500">
-            支払い後に zap receipt が公開され、メーターに反映されます。
+            After payment, zap receipt will be published and reflected in the meter.
           </p>
         </div>
       ) : (
@@ -211,7 +211,7 @@ export default function ZapPanel(props: {
           />
           <p class="mt-2 text-sm text-zinc-400">
             Goal: {formatSats(props.goalMsats)} · Amount: {formatSats(BigInt(selected()) * 1000n)}
-            (Zap 直送・All-in のため返金なし)
+            (No refunds — Zap direct · All-in)
           </p>
           <button
             type="button"
@@ -219,7 +219,7 @@ export default function ZapPanel(props: {
             disabled={phase() === "working"}
             class="mt-3 w-full rounded bg-amber-400 px-4 py-2 font-semibold text-zinc-950 disabled:opacity-50"
           >
-            {phase() === "working" ? step() : "Zapで支援する"}
+            {phase() === "working" ? step() : "Zap to support"}
           </button>
         </div>
       )}

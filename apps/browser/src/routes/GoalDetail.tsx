@@ -60,7 +60,7 @@ export default function GoalDetail() {
     setError(null);
     const decoded = decodeNevent(params["nevent"] ?? "");
     if (decoded === null) {
-      setError("不正なプロジェクト ID です");
+      setError("Invalid project ID");
       setLoading(false);
       return;
     }
@@ -70,7 +70,7 @@ export default function GoalDetail() {
     fetchGoalById(url, goalId)
       .then((found) => {
         if (found === null) {
-          setError("プロジェクトが見つかりません");
+          setError("Project not found");
           return;
         }
         setCard(found);
@@ -85,7 +85,7 @@ export default function GoalDetail() {
         });
       })
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : "取得に失敗しました");
+        setError(err instanceof Error ? err.message : "Failed to fetch");
       })
       .finally(() => {
         setLoading(false);
@@ -110,7 +110,7 @@ export default function GoalDetail() {
 
   const deadline = () => {
     const closedAt = card()?.closedAt;
-    if (closedAt === undefined) return "期限なし";
+    if (closedAt === undefined) return "No deadline";
     return remainingLabel(Math.floor(Date.now() / 1000), closedAt);
   };
 
@@ -141,7 +141,7 @@ export default function GoalDetail() {
         setDeleted(true);
       })
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : "削除に失敗しました");
+        setError(err instanceof Error ? err.message : "Failed to delete");
       })
       .finally(() => {
         setDeleting(false);
@@ -152,7 +152,7 @@ export default function GoalDetail() {
   return (
     <div>
       <a href="/" class="text-sm text-zinc-400 hover:text-zinc-100">
-        ← 一覧に戻る
+        ← Back to list
       </a>
       <div class="mt-2">
         <RelayBar relay={relay()} onChange={setRelay} />
@@ -160,7 +160,7 @@ export default function GoalDetail() {
       {loading() && <Loading />}
       {error() !== null && !loading() && <ErrorState message={error() ?? ""} onRetry={load} />}
       {!loading() && error() === null && card() === null && (
-        <EmptyState message="プロジェクトが見つかりません。" />
+        <EmptyState message="Project not found。" />
       )}
       {card() !== null && (
         <article>
@@ -198,10 +198,10 @@ export default function GoalDetail() {
                 {(
                   [
                     ["desc", "説明"],
-                    ["supporters", `支援者 (${supporters().length})`],
-                    ["comments", `コメント (${commentCount()})`],
-                    ["reports", `活動報告 (${reports().length})`],
-                    ["owner", "プロジェクトオーナー"],
+                    ["supporters", `supporters者 (${supporters().length})`],
+                    ["comments", `comment (${commentCount()})`],
+                    ["reports", `活動update (${reports().length})`],
+                    ["owner", "Project owner"],
                   ] as const
                 ).map(([id, label]) => (
                   <button
@@ -304,7 +304,7 @@ export default function GoalDetail() {
                   </p>
                 )}
                 <div class="mt-3 flex justify-between border-t border-zinc-800 pt-3 text-sm">
-                  <span class="text-zinc-400">支援者</span>
+                  <span class="text-zinc-400">supporters者</span>
                   <span class="font-semibold">{supporters().length}人</span>
                 </div>
                 <div class="flex justify-between text-sm">
@@ -313,8 +313,8 @@ export default function GoalDetail() {
                 </div>
                 <p class="mt-2 text-xs text-zinc-500">
                   {verified()
-                    ? "検証済み集計 (LNURL署名者・金額を照合)"
-                    : "未検証: 作成者の送金先が不明のため集計できません"}
+                    ? "Verified tally (LNURL signer & amount checked)"
+                    : "Unverified: cannot tally because creator's payment target is unknown"}
                 </p>
               </div>
               <ZapPanel
@@ -345,12 +345,12 @@ export default function GoalDetail() {
                 </div>
                 <p class="text-sm text-zinc-300">
                   {supporters().length > 0
-                    ? `${supporters().length}人が支援しています`
-                    : "最初の支援者になりましょう"}
+                    ? `${supporters().length} supporters`
+                    : "Be the first supporter"}
                 </p>
                 {recentCount() > 0 && (
                   <p class="mt-1 text-xs font-semibold text-amber-300">
-                    直近24時間で{recentCount()}人が支援！
+                    In the last 24 hours{recentCount()} supporters!
                   </p>
                 )}
               </div>
@@ -369,7 +369,7 @@ export default function GoalDetail() {
                                 : "bg-green-900 text-green-200"
                           }`}
                         >
-                          {item.kind === "zap" ? "支援" : item.kind === "comment" ? "コメント" : "報告"}
+                          {item.kind === "zap" ? "supporters" : item.kind === "comment" ? "comment" : "update"}
                         </span>
                         <span class="truncate text-zinc-300">{item.text}</span>
                         <span class="ml-auto shrink-0 text-xs text-zinc-500">
@@ -390,7 +390,7 @@ export default function GoalDetail() {
                   }}
                   class="rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-300 hover:border-zinc-500"
                 >
-                  このページのURLをコピー
+                  Copy this page URL
                 </button>
                 <button
                   type="button"
@@ -401,12 +401,12 @@ export default function GoalDetail() {
                   }}
                   class="rounded-lg border border-zinc-700 px-4 py-2 font-mono text-xs text-zinc-400 hover:border-zinc-500"
                 >
-                  neventをコピー
+                  Copy nevent
                 </button>
               </div>
               {isAuthor() && !deleted() && (
                 <section class="rounded-lg border border-red-900 p-4">
-                  <h2 class="font-semibold text-red-300">このプロジェクトを削除する</h2>
+                  <h2 class="font-semibold text-red-300">このプロジェクトをDelete</h2>
                   {!confirming() ? (
                     <button
                       type="button"
@@ -415,7 +415,7 @@ export default function GoalDetail() {
                       }}
                       class="mt-2 rounded border border-red-700 px-3 py-1 text-sm text-red-300 hover:bg-red-950"
                     >
-                      削除する
+                      Delete
                     </button>
                   ) : (
                     <div class="mt-2 flex items-center gap-2">
@@ -426,7 +426,7 @@ export default function GoalDetail() {
                         disabled={deleting()}
                         class="rounded bg-red-600 px-3 py-1 text-sm font-semibold text-white disabled:opacity-50"
                       >
-                        {deleting() ? "削除中…" : "削除を実行"}
+                        {deleting() ? "Deleting…" : "Delete"}
                       </button>
                       <button
                         type="button"
@@ -443,9 +443,9 @@ export default function GoalDetail() {
               )}
               {deleted() && (
                 <p class="rounded border border-green-800 bg-green-950/40 p-3 text-sm text-green-300">
-                  削除要求を送信しました。リレーへの反映に時間がかかる場合があります。
+                  Delete request sent. May take time to reflect in relay.
                   <a class="ml-2 underline" href="/">
-                    一覧に戻る
+                    Back to list
                   </a>
                 </p>
               )}

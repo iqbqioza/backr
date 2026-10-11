@@ -18,7 +18,7 @@ export default function RelayBar(props: { relay: string; onChange: (url: string)
         }}
         class="shrink-0 rounded border border-zinc-700 px-2 py-1.5 text-xs text-zinc-400 hover:text-zinc-100"
       >
-        既定に戻す
+        Reset to default
       </button>
     </div>
   );

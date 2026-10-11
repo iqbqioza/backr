@@ -2,6 +2,7 @@ import { createSignal } from "solid-js";
 import { canSign } from "../lib/auth";
 import type { ReportData } from "../lib/goals";
 import { postReport } from "../lib/reports";
+import { REPORTS } from "../lib/copy";
 
 export default function ReportForm(props: {
   relayUrl: string;
@@ -24,7 +25,7 @@ export default function ReportForm(props: {
         setBody("");
       })
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : "投稿に失敗しました");
+        setError(err instanceof Error ? err.message : "Failed to post");
       })
       .finally(() => {
         setPosting(false);
@@ -37,7 +38,7 @@ export default function ReportForm(props: {
 
   return (
     <div class="rounded-lg border border-zinc-800 bg-zinc-900 p-3">
-      <h3 class="mb-2 font-medium">活動報告を書く</h3>
+      <h3 class="mb-2 font-medium">Write an update</h3>
       <input
         class="w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm"
         placeholder="タイトル"
@@ -49,7 +50,7 @@ export default function ReportForm(props: {
       <textarea
         class="mt-2 w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm"
         rows={4}
-        placeholder="進捗・お知らせ (Markdown)"
+        placeholder={REPORTS.bodyPlaceholder}
         value={body()}
         onInput={(e) => {
           setBody(e.currentTarget.value);
@@ -61,7 +62,7 @@ export default function ReportForm(props: {
         disabled={posting()}
         class="mt-2 rounded bg-amber-400 px-3 py-1.5 text-sm font-semibold text-zinc-950 disabled:opacity-50"
       >
-        {posting() ? "公開中…" : "報告を公開する"}
+        {posting() ? "Publishing…" : "Publish update"}
       </button>
       {error() !== null && <p class="mt-2 text-sm text-red-400">{error()}</p>}
     </div>

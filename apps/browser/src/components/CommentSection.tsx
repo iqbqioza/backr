@@ -43,7 +43,7 @@ function CommentRow(props: {
             type="button"
             onClick={() => props.onToggle(comment().id)}
             class="w-5 shrink-0 rounded text-center font-mono text-sm text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
-            title={props.collapsed ? "開く" : "折りたたむ"}
+            title={props.collapsed ? "Open" : "Collapse"}
           >
             {props.collapsed ? "+" : "–"}
           </button>
@@ -72,7 +72,7 @@ function CommentRow(props: {
               onClick={() => props.onReply(comment())}
               class="text-xs text-zinc-400 hover:text-zinc-100"
             >
-              {props.replying ? "返信中" : "返信する"}
+              {props.replying ? "返信中" : "Reply"}
             </button>
           )}
           {props.isMine(comment()) &&
@@ -156,7 +156,7 @@ export default function CommentSection(props: {
       })
       .then(setProfiles)
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : "取得に失敗しました");
+        setError(err instanceof Error ? err.message : "Failed to fetch");
       })
       .finally(() => {
         setLoading(false);
@@ -184,7 +184,7 @@ export default function CommentSection(props: {
         setReplyTo(null);
       })
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : "投稿に失敗しました");
+        setError(err instanceof Error ? err.message : "Failed to post");
       })
       .finally(() => {
         setPosting(false);
@@ -209,7 +209,7 @@ export default function CommentSection(props: {
         setConfirming(null);
       })
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : "削除に失敗しました");
+        setError(err instanceof Error ? err.message : "Failed to delete");
       })
       .finally(() => {
         setWorking(false);
@@ -289,7 +289,7 @@ function ReplyForm(props: {
                 <ReplyForm
                   body={body()}
                   posting={posting()}
-                  submitLabel="返信する"
+                  submitLabel="Reply"
                   placeholder={`${displayName(profiles(), node.comment.pubkey)} への返信`}
                   indentRem={node.depth * 1.5}
                   onBody={setBody}
@@ -309,7 +309,7 @@ function ReplyForm(props: {
             body={body()}
             posting={posting()}
             submitLabel="投稿"
-            placeholder="コメントを書く (プレーンテキスト)"
+            placeholder="Write a comment (plain text)"
             indentRem={0}
             onBody={(value) => {
               setReplyTo(null);

@@ -52,7 +52,7 @@ export default function ReportList(props: {
         setEditing(null);
       })
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : "更新に失敗しました");
+        setError(err instanceof Error ? err.message : "Failed to update");
       })
       .finally(() => {
         setWorking(false);
@@ -69,7 +69,7 @@ export default function ReportList(props: {
         setConfirming(null);
       })
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : "削除に失敗しました");
+        setError(err instanceof Error ? err.message : "Failed to delete");
       })
       .finally(() => {
         setWorking(false);
@@ -127,7 +127,7 @@ export default function ReportList(props: {
                           disabled={working()}
                           class="rounded bg-amber-400 px-3 py-1 text-sm font-semibold text-zinc-950 disabled:opacity-50"
                         >
-                          {working() ? "保存中…" : "保存する"}
+                          {working() ? "Saving…" : "Save"}
                         </button>
                         <button
                           type="button"
@@ -153,7 +153,7 @@ export default function ReportList(props: {
                         onClick={() => startEdit(report)}
                         class="text-xs text-zinc-400 hover:text-zinc-100"
                       >
-                        編集する
+                        Edit
                       </button>
                       {confirming() === report.id ? (
                         <span class="flex items-center gap-2 text-xs">
@@ -164,7 +164,7 @@ export default function ReportList(props: {
                             disabled={working()}
                             class="rounded bg-red-600 px-2 py-0.5 font-semibold text-white disabled:opacity-50"
                           >
-                            削除を実行
+                            Delete
                           </button>
                           <button
                             type="button"
@@ -184,7 +184,7 @@ export default function ReportList(props: {
                           }}
                           class="text-xs text-red-400 hover:text-red-300"
                         >
-                          削除する
+                          Delete
                         </button>
                       )}
                     </div>

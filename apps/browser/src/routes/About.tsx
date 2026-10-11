@@ -1,7 +1,7 @@
 const NIPS = [
-  { nip: "NIP-01", use: "鍵・イベント・リレー通信の基本" },
-  { nip: "NIP-19", use: "nevent / npub / nsec の共有・入力形式" },
-  { nip: "NIP-23", use: "活動報告の長文記事 (kind:30023)" },
+  { nip: "NIP-01", use: "Keys, events, and relay messaging basic" },
+  { nip: "NIP-19", use: "nevent / npub / nsec sharing & input format" },
+  { nip: "NIP-23", use: "Long-form updates (kind:30023)" },
   { nip: "NIP-57", use: "Zap 支援 (kind:9734 → kind:9735)" },
   { nip: "NIP-75", use: "Funding goal (kind:9041). No custom kinds" },
 ];
@@ -12,17 +12,17 @@ export default function About() {
       <div>
         <h1 class="mb-2 text-2xl font-bold">Backrとは</h1>
         <p class="text-zinc-300">
-          Backr はすべて Nostr 上で完結するクラウドファンディングです。アカウント登録もサーバも不要で、
-          公開鍵ひとつでプロジェクトを立ち上げられます。
+          Backr is crowdfunding that lives entirely on Nostr. No accounts, no servers — just your keys.,
+          Can start a project with just a public key。
         </p>
       </div>
       <section class="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
         <h2 class="mb-2 font-semibold">仕組み</h2>
         <ul class="list-disc space-y-1 pl-5 text-sm text-zinc-300">
-          <li>支援は Zap で作成者に直送されます。Backr が資金を預かりません</li>
+          <li>Support is sent directly to the creator via Zap. Backr does not hold funds</li>
           <li>All-in: No refunds regardless of deadline or outcome</li>
           <li>Progress meter shows total of zap receipts (kind:9735)</li>
-          <li>締切 (closed_at) を過ぎた支援は集計に含めません</li>
+          <li>Support after closed_at is not included in the tally</li>
         </ul>
       </section>
       <section>

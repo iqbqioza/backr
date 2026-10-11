@@ -18,7 +18,7 @@ export default function App() {
         </Router>
       </main>
       <footer class="border-t border-zinc-800 py-4 text-center text-xs text-zinc-500">
-        Backr — Nostr 上のクラウドファンディング (Zap・All-in)
+        Backr — Crowdfunding on Nostr (Zap · All-in)
       </footer>
     </div>
   );

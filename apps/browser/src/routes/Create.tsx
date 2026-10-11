@@ -96,7 +96,7 @@ export default function Create() {
     }
     setErrors([]);
     setUnsigned(draft);
-    setPreview(JSON.stringify({ ...draft, id: "(署名時に確定)", sig: "(署名時に確定)" }, null, 2));
+    setPreview(JSON.stringify({ ...draft, id: "(signed)", sig: "(signed)" }, null, 2));
   };
 
   const onPublish = () => {
@@ -120,7 +120,7 @@ export default function Create() {
         });
       })
       .catch((err: unknown) => {
-        setErrors([err instanceof Error ? err.message : "公開に失敗しました"]);
+        setErrors([err instanceof Error ? err.message : "Publishing failed"]);
       })
       .finally(() => {
         setPublishing(false);
@@ -159,7 +159,7 @@ export default function Create() {
             </p>
           )}
           <label class="text-sm">
-            短い説明 (summary)
+            Short description
             <input
               class={input}
               placeholder={CREATE.summaryPlaceholder}
@@ -170,7 +170,7 @@ export default function Create() {
             />
           </label>
           <label class="text-sm">
-            詳しい説明
+            Details
             <textarea
               class={input}
               rows={6}
@@ -255,7 +255,7 @@ export default function Create() {
             <p class="mt-3 text-sm text-zinc-400">
               Goal: {goalMsats() === null ? "—" : formatSats(goalMsats() ?? 0n)}
               {" / "}
-              {closedAtSec() === null ? "期限なし" : remainingLabel(nowSec(), closedAtSec() ?? 0)}
+              {closedAtSec() === null ? "No deadline" : remainingLabel(nowSec(), closedAtSec() ?? 0)}
             </p>
           </div>
           {preview() !== null && (
@@ -268,7 +268,7 @@ export default function Create() {
               disabled={publishing()}
               class="mt-3 w-full rounded bg-amber-400 px-4 py-2 font-semibold text-zinc-950 disabled:opacity-50"
             >
-              {publishing() ? "Publishing…" : `${DEFAULT_RELAY} に公開する`}
+              {publishing() ? "Publishing…" : `${CREATE.publish(DEFAULT_RELAY)}`}
             </button>
           )}
           {published() !== null && (
