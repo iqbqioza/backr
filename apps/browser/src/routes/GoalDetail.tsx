@@ -137,118 +137,128 @@ export default function GoalDetail() {
         <EmptyState message="プロジェクトが見つかりません。" />
       )}
       {card() !== null && (
-        <article class="grid gap-6">
+        <article>
           {card()?.image !== undefined && (
-            <img src={card()?.image} alt="" class="h-56 w-full rounded-lg object-cover" />
+            <img src={card()?.image} alt="" class="h-64 w-full rounded-xl object-cover" />
           )}
-          <div>
-            <h1 class="text-2xl font-bold">{card()?.title}</h1>
-            <div class="mt-3">
-              <CreatorCard profile={profile()} pubkey={card()?.pubkey ?? ""} />
-            </div>
-          </div>
-          <div class="grid gap-2 rounded-lg border border-zinc-800 bg-zinc-900 p-4 sm:grid-cols-4">
-            <div>
-              <p class="text-xs text-zinc-500">支援総額</p>
-              <p class="font-semibold text-amber-300">{formatSats(raised())}</p>
-            </div>
-            <div>
-              <p class="text-xs text-zinc-500">目標</p>
-              <p class="font-semibold">{formatSats(card()?.goalMsats ?? 0n)}</p>
-            </div>
-            <div>
-              <p class="text-xs text-zinc-500">達成率</p>
-              <p class="font-semibold">{progressPercent(raised(), card()?.goalMsats ?? 0n)}%</p>
-            </div>
-            <div>
-              <p class="text-xs text-zinc-500">締切</p>
-              <p class="font-semibold">{deadline()}</p>
-            </div>
-            <div class="sm:col-span-4">
-              <ProgressMeter raisedMsats={raised()} goalMsats={card()?.goalMsats ?? 0n} />
-              <p class="mt-1 text-xs text-zinc-500">
-                {verified()
-                  ? "検証済み集計 (LNURL署名者・金額を照合)"
-                  : "未検証: 作成者の送金先が不明のため集計できません"}
-              </p>
-            </div>
-          </div>
-          <ZapPanel
-            goalId={card()?.id ?? ""}
-            recipientPubkey={card()?.pubkey ?? ""}
-            profile={profile()}
-            relays={card()?.relays ?? []}
-            goalMsats={card()?.goalMsats ?? 0n}
-            onPaid={() => {
-              void refreshStats(profile());
-            }}
-          />
-          <section>
-            <h2 class="mb-2 text-xl font-semibold">説明</h2>
-            <p class="whitespace-pre-wrap text-zinc-300">{card()?.description}</p>
-          </section>
-          <SupporterList supporters={supporters()} profiles={supporterProfiles()} />
-          <CommentSection relayUrl={relay()} goalId={card()?.id ?? ""} goalAuthor={card()?.pubkey ?? ""} />
-          {isAuthor() && (
-            <ReportForm
-              relayUrl={relay()}
-              goalId={card()?.id ?? ""}
-              onPosted={(report) => {
-                setReports(mergeReports(reports(), [report]));
-              }}
-            />
-          )}
-          <ReportList
-            reports={reports()}
-            relayUrl={relay()}
-            goalId={card()?.id ?? ""}
-            onChange={setReports}
-          />
-          {isAuthor() && !deleted() && (
-            <section class="rounded-lg border border-red-900 p-4">
-              <h2 class="font-semibold text-red-300">このプロジェクトを削除する</h2>
-              {!confirming() ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setConfirming(true);
+          <h1 class="mt-4 text-2xl font-bold md:text-3xl">{card()?.title}</h1>
+          <div class="mt-3 grid gap-8 lg:grid-cols-3">
+            <div class="grid content-start gap-8 lg:col-span-2">
+              <section>
+                <h2 class="mb-2 text-xl font-semibold">説明</h2>
+                <p class="whitespace-pre-wrap text-zinc-300">{card()?.description}</p>
+              </section>
+              <SupporterList supporters={supporters()} profiles={supporterProfiles()} />
+              <CommentSection relayUrl={relay()} goalId={card()?.id ?? ""} goalAuthor={card()?.pubkey ?? ""} />
+              {isAuthor() && (
+                <ReportForm
+                  relayUrl={relay()}
+                  goalId={card()?.id ?? ""}
+                  onPosted={(report) => {
+                    setReports(mergeReports(reports(), [report]));
                   }}
-                  class="mt-2 rounded border border-red-700 px-3 py-1 text-sm text-red-300 hover:bg-red-950"
-                >
-                  削除する
-                </button>
-              ) : (
-                <div class="mt-2 flex items-center gap-2">
-                  <p class="text-sm text-zinc-300">本当に削除しますか?</p>
-                  <button
-                    type="button"
-                    onClick={onDelete}
-                    disabled={deleting()}
-                    class="rounded bg-red-600 px-3 py-1 text-sm font-semibold text-white disabled:opacity-50"
-                  >
-                    {deleting() ? "削除中…" : "削除を実行"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setConfirming(false);
-                    }}
-                    class="rounded border border-zinc-700 px-3 py-1 text-sm"
-                  >
-                    やめる
-                  </button>
-                </div>
+                />
               )}
-            </section>
-          )}
-          {deleted() && (
-            <p class="rounded border border-green-800 bg-green-950/40 p-3 text-sm text-green-300">
-              削除要求を送信しました。リレーへの反映に時間がかかる場合があります。
-              <a class="ml-2 underline" href="/">
-                一覧に戻る
-              </a>
-            </p>
-          )}
+              <ReportList
+                reports={reports()}
+                relayUrl={relay()}
+                goalId={card()?.id ?? ""}
+                onChange={setReports}
+              />
+            </div>
+            <aside class="grid content-start gap-4 self-start lg:sticky lg:top-4">
+              <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
+                <p class="text-4xl font-bold text-amber-300">
+                  {progressPercent(raised(), card()?.goalMsats ?? 0n)}%
+                </p>
+                <div class="mt-2">
+                  <ProgressMeter raisedMsats={raised()} goalMsats={card()?.goalMsats ?? 0n} compact />
+                </div>
+                <p class="mt-2 text-lg font-semibold">{formatSats(raised())}</p>
+                <p class="text-sm text-zinc-400">目標 {formatSats(card()?.goalMsats ?? 0n)}</p>
+                <div class="mt-3 flex justify-between border-t border-zinc-800 pt-3 text-sm">
+                  <span class="text-zinc-400">支援者</span>
+                  <span class="font-semibold">{supporters().length}人</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span class="text-zinc-400">残り時間</span>
+                  <span class="font-semibold">{deadline()}</span>
+                </div>
+                <p class="mt-2 text-xs text-zinc-500">
+                  {verified()
+                    ? "検証済み集計 (LNURL署名者・金額を照合)"
+                    : "未検証: 作成者の送金先が不明のため集計できません"}
+                </p>
+              </div>
+              <ZapPanel
+                goalId={card()?.id ?? ""}
+                recipientPubkey={card()?.pubkey ?? ""}
+                profile={profile()}
+                relays={card()?.relays ?? []}
+                goalMsats={card()?.goalMsats ?? 0n}
+                onPaid={() => {
+                  void refreshStats(profile());
+                }}
+              />
+              <CreatorCard profile={profile()} pubkey={card()?.pubkey ?? ""} />
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof navigator !== "undefined" && navigator.clipboard !== undefined) {
+                    void navigator.clipboard.writeText(window.location.href);
+                  }
+                }}
+                class="rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-300 hover:border-zinc-500"
+              >
+                このページのURLをコピー
+              </button>
+              {isAuthor() && !deleted() && (
+                <section class="rounded-lg border border-red-900 p-4">
+                  <h2 class="font-semibold text-red-300">このプロジェクトを削除する</h2>
+                  {!confirming() ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setConfirming(true);
+                      }}
+                      class="mt-2 rounded border border-red-700 px-3 py-1 text-sm text-red-300 hover:bg-red-950"
+                    >
+                      削除する
+                    </button>
+                  ) : (
+                    <div class="mt-2 flex items-center gap-2">
+                      <p class="text-sm text-zinc-300">本当に削除しますか?</p>
+                      <button
+                        type="button"
+                        onClick={onDelete}
+                        disabled={deleting()}
+                        class="rounded bg-red-600 px-3 py-1 text-sm font-semibold text-white disabled:opacity-50"
+                      >
+                        {deleting() ? "削除中…" : "削除を実行"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConfirming(false);
+                        }}
+                        class="rounded border border-zinc-700 px-3 py-1 text-sm"
+                      >
+                        やめる
+                      </button>
+                    </div>
+                  )}
+                </section>
+              )}
+              {deleted() && (
+                <p class="rounded border border-green-800 bg-green-950/40 p-3 text-sm text-green-300">
+                  削除要求を送信しました。リレーへの反映に時間がかかる場合があります。
+                  <a class="ml-2 underline" href="/">
+                    一覧に戻る
+                  </a>
+                </p>
+              )}
+            </aside>
+          </div>
         </article>
       )}
     </div>

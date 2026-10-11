@@ -1,10 +1,18 @@
 import { encodeNevent } from "backr-nostr-nips";
-import { remainingLabel } from "backr-utils";
+import { formatSats, progressPercent, remainingLabel } from "backr-utils";
 import type { GoalCardData } from "../lib/goals";
+import type { ValidatedGoalZap } from "../lib/supporters";
 import ProgressMeter from "./ProgressMeter";
 
-export default function GoalCard(props: { card: GoalCardData; raisedMsats?: bigint }) {
+/**
+ * CAMPFIRE 風カード: 画像 / タイトル / 達成率% / 支援額 / 支援者数 / 残り日数。
+ * 配色は Backr (zinc + amber) のまま。
+ */
+export default function GoalCard(props: { card: GoalCardData; zap?: ValidatedGoalZap }) {
   const nevent = () => encodeNevent({ id: props.card.id, relays: props.card.relays.slice(0, 3) }) ?? "";
+  const raised = () => props.zap?.totalMsats ?? 0n;
+  const count = () => props.zap?.count ?? 0;
+  const pct = () => progressPercent(raised(), props.card.goalMsats);
   const deadline = () =>
     props.card.closedAt === undefined
       ? "期限なし"
@@ -12,19 +20,25 @@ export default function GoalCard(props: { card: GoalCardData; raisedMsats?: bigi
   return (
     <a
       href={`/g/${nevent()}`}
-      class="block rounded-lg border border-zinc-800 bg-zinc-900 p-4 hover:border-zinc-600"
+      class="block w-64 shrink-0 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 hover:border-zinc-600"
     >
-      {props.card.image !== undefined && (
-        <img src={props.card.image} alt="" class="mb-3 h-40 w-full rounded object-cover" />
+      {props.card.image !== undefined ? (
+        <img src={props.card.image} alt="" class="h-36 w-full object-cover" />
+      ) : (
+        <div class="flex h-36 w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-4xl">
+          ⚡
+        </div>
       )}
-      <h2 class="text-lg font-semibold">{props.card.title}</h2>
-      {props.card.summary.length > 0 && (
-        <p class="mt-1 line-clamp-2 text-sm text-zinc-400">{props.card.summary}</p>
-      )}
-      <div class="mt-3">
-        <ProgressMeter raisedMsats={props.raisedMsats ?? 0n} goalMsats={props.card.goalMsats} />
+      <div class="p-3">
+        <h3 class="line-clamp-2 min-h-10 text-sm font-semibold leading-snug">{props.card.title}</h3>
+        <p class="mt-2 text-2xl font-bold text-amber-300">{pct()}%</p>
+        <ProgressMeter raisedMsats={raised()} goalMsats={props.card.goalMsats} compact />
+        <p class="mt-1 text-sm font-semibold">{formatSats(raised())}</p>
+        <p class="mt-1 flex justify-between text-xs text-zinc-400">
+          <span>{count()}人が支援</span>
+          <span>{deadline()}</span>
+        </p>
       </div>
-      <p class="mt-2 text-sm text-zinc-400">{deadline()}</p>
     </a>
   );
 }

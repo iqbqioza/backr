@@ -157,29 +157,3 @@ export async function fetchProfiles(
   const events = await fetchEvents([{ kinds: [0], authors: unique, limit: unique.length }], relayUrl);
   return profilesByKey(events);
 }
-
-export type SortMode = "new" | "progress" | "deadline";
-
-function progressRatio(card: GoalCardData, tallies: Map<string, bigint>): number {
-  if (card.goalMsats <= 0n) return 0;
-  return Number(tallies.get(card.id) ?? 0n) / Number(card.goalMsats);
-}
-
-/** 一覧ソート (純粋関数) */
-export function sortGoalCards(
-  cards: GoalCardData[],
-  tallies: Map<string, bigint>,
-  mode: SortMode,
-): GoalCardData[] {
-  const arr = [...cards];
-  if (mode === "deadline") {
-    arr.sort(
-      (a, b) => (a.closedAt ?? Number.MAX_SAFE_INTEGER) - (b.closedAt ?? Number.MAX_SAFE_INTEGER),
-    );
-  } else if (mode === "progress") {
-    arr.sort((a, b) => progressRatio(b, tallies) - progressRatio(a, tallies));
-  } else {
-    arr.sort((a, b) => b.createdAt - a.createdAt);
-  }
-  return arr;
-}

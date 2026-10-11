@@ -3,10 +3,8 @@ import {
   dedupeReports,
   parseProfile,
   profilesByKey,
-  sortGoalCards,
   toGoalCard,
   toReportData,
-  type GoalCardData,
 } from "./goals";
 
 const BASE = {
@@ -34,42 +32,6 @@ describe("toGoalCard", () => {
   });
   it("rejects an invalid goal", () => {
     expect(toGoalCard({ ...BASE, tags: [] })).toBeNull();
-  });
-});
-
-function card(id: string, createdAt: number, goalMsats: bigint, closedAt?: number): GoalCardData {
-  return {
-    id,
-    pubkey: "b".repeat(64),
-    createdAt,
-    description: "d",
-    summary: "s",
-    title: id,
-    goalMsats,
-    closedAt,
-    relays: ["wss://relay.nostrfy.org"],
-  };
-}
-
-describe("sortGoalCards", () => {
-  const cards = [
-    card("a", 300, 1000n, 9999),
-    card("b", 100, 1000n, 1111),
-    card("c", 200, 1000n),
-  ];
-  const tallies = new Map([
-    ["a", 100n],
-    ["b", 900n],
-    ["c", 500n],
-  ]);
-  it("sorts by new", () => {
-    expect(sortGoalCards(cards, tallies, "new").map((c) => c.id)).toEqual(["a", "c", "b"]);
-  });
-  it("sorts by progress", () => {
-    expect(sortGoalCards(cards, tallies, "progress").map((c) => c.id)).toEqual(["b", "c", "a"]);
-  });
-  it("sorts by deadline (no deadline last)", () => {
-    expect(sortGoalCards(cards, tallies, "deadline").map((c) => c.id)).toEqual(["b", "a", "c"]);
   });
 });
 

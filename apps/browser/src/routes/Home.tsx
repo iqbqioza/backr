@@ -1,28 +1,28 @@
-import { createSignal, onMount } from "solid-js";
+import { encodeNevent } from "backr-nostr-nips";
+import { formatSats, progressPercent, remainingLabel } from "backr-utils";
+import { createSignal, onMount, type JSX } from "solid-js";
 import GoalCard from "../components/GoalCard";
 import RelayBar from "../components/RelayBar";
 import { EmptyState, ErrorState, Loading } from "../components/States";
 import { DEFAULT_RELAY } from "../lib/const";
-import {
-  fetchGoalCards,
-  fetchProfiles,
-  sortGoalCards,
-  type GoalCardData,
-  type SortMode,
-} from "../lib/goals";
+import { fetchGoalCards, fetchProfiles, type GoalCardData } from "../lib/goals";
+import { pickSections } from "../lib/sections";
 import { fetchCardZapData, type ValidatedGoalZap } from "../lib/supporters";
+import ProgressMeter from "../components/ProgressMeter";
 
-const TABS: { id: SortMode; label: string }[] = [
-  { id: "new", label: "新着" },
-  { id: "progress", label: "達成率順" },
-  { id: "deadline", label: "締切順" },
-];
+function Section(props: { title: string; children: JSX.Element }) {
+  return (
+    <section class="mt-10">
+      <h2 class="mb-3 text-xl font-bold">{props.title}</h2>
+      <div class="flex gap-4 overflow-x-auto pb-2">{props.children}</div>
+    </section>
+  );
+}
 
 export default function Home() {
   const [relay, setRelay] = createSignal(DEFAULT_RELAY);
   const [cards, setCards] = createSignal<GoalCardData[]>([]);
   const [zapData, setZapData] = createSignal(new Map<string, ValidatedGoalZap>());
-  const [mode, setMode] = createSignal<SortMode>("new");
   const [loading, setLoading] = createSignal(true);
   const [error, setError] = createSignal<string | null>(null);
 
@@ -47,48 +47,91 @@ export default function Home() {
 
   onMount(load);
 
-  const totals = () =>
-    new Map([...zapData()].map(([id, data]) => [id, data.totalMsats] as const));
-  const sorted = () => sortGoalCards(cards(), totals(), mode());
+  const sections = () => pickSections(cards(), zapData());
+  const zapOf = (id: string) => zapData().get(id);
+
+  const featuredNevent = () => {
+    const featured = sections().featured;
+    if (featured === null) return "";
+    return encodeNevent({ id: featured.id, relays: featured.relays.slice(0, 3) }) ?? "";
+  };
 
   return (
     <div>
-      <h1 class="mb-4 text-2xl font-bold">プロジェクトを探す</h1>
       <RelayBar relay={relay()} onChange={setRelay} />
-      <div class="mb-4 flex gap-2">
-        {TABS.map((tab) => (
-          <button
-            type="button"
-            onClick={() => {
-              setMode(tab.id);
-            }}
-            class={`rounded-full border px-4 py-1 text-sm ${
-              mode() === tab.id
-                ? "border-amber-400 text-amber-300"
-                : "border-zinc-700 text-zinc-400 hover:text-zinc-100"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-        <button
-          type="button"
-          onClick={load}
-          class="ml-auto rounded border border-zinc-700 px-3 py-1 text-sm text-zinc-400 hover:text-zinc-100"
-        >
-          更新
-        </button>
-      </div>
       {loading() && <Loading />}
       {error() !== null && !loading() && <ErrorState message={`リレー取得失敗: ${error()}`} onRetry={load} />}
-      {!loading() && error() === null && sorted().length === 0 && (
+      {!loading() && error() === null && cards().length === 0 && (
         <EmptyState message="まだプロジェクトがありません。「作る」から最初の案件を公開しましょう。" />
       )}
-      <div class="grid gap-4 md:grid-cols-2">
-        {sorted().map((card) => (
-          <GoalCard card={card} raisedMsats={zapData().get(card.id)?.totalMsats ?? 0n} />
-        ))}
-      </div>
+      {!loading() && sections().featured !== null && (
+        <a
+          href={`/g/${featuredNevent()}`}
+          class="grid overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 hover:border-zinc-600 md:grid-cols-5"
+        >
+          {(() => {
+            const featured = sections().featured;
+            if (featured === null) return null;
+            const zap = zapOf(featured.id);
+            const raised = zap?.totalMsats ?? 0n;
+            return (
+              <>
+                {featured.image !== undefined ? (
+                  <img src={featured.image} alt="" class="h-64 w-full object-cover md:col-span-3 md:h-full" />
+                ) : (
+                  <div class="flex h-64 w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-7xl md:col-span-3 md:h-full">
+                    ⚡
+                  </div>
+                )}
+                <div class="p-6 md:col-span-2">
+                  <p class="text-xs font-semibold tracking-wider text-amber-300">注目のプロジェクト</p>
+                  <h1 class="mt-2 text-2xl font-bold leading-tight">{featured.title}</h1>
+                  {featured.summary.length > 0 && (
+                    <p class="mt-2 line-clamp-3 text-sm text-zinc-400">{featured.summary}</p>
+                  )}
+                  <p class="mt-4 text-4xl font-bold text-amber-300">
+                    {progressPercent(raised, featured.goalMsats)}%
+                  </p>
+                  <div class="mt-2">
+                    <ProgressMeter raisedMsats={raised} goalMsats={featured.goalMsats} compact />
+                  </div>
+                  <p class="mt-2 text-lg font-semibold">{formatSats(raised)}</p>
+                  <p class="mt-1 text-sm text-zinc-400">
+                    {zap?.count ?? 0}人が支援 /{" "}
+                    {featured.closedAt === undefined
+                      ? "期限なし"
+                      : remainingLabel(Math.floor(Date.now() / 1000), featured.closedAt)}
+                  </p>
+                </div>
+              </>
+            );
+          })()}
+        </a>
+      )}
+      {!loading() && sections().recommended.length > 0 && (
+        <Section title="おすすめ">
+          {sections().recommended.map((card) => (
+            <GoalCard card={card} zap={zapOf(card.id)} />
+          ))}
+        </Section>
+      )}
+      {!loading() && sections().endingSoon.length > 0 && (
+        <Section title="もうすぐ終了">
+          {sections().endingSoon.map((card) => (
+            <GoalCard card={card} zap={zapOf(card.id)} />
+          ))}
+        </Section>
+      )}
+      {!loading() && sections().fresh.length > 0 && (
+        <section class="mt-10">
+          <h2 class="mb-3 text-xl font-bold">新着</h2>
+          <div class="flex gap-4 overflow-x-auto pb-2">
+            {sections().fresh.map((card) => (
+              <GoalCard card={card} zap={zapOf(card.id)} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
