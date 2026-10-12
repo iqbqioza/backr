@@ -270,7 +270,7 @@ export default function GoalDetail() {
             />
           </div>
           <div class="mt-3 grid gap-8 lg:grid-cols-3">
-            <div class="grid content-start gap-8 lg:col-span-2">
+            <div class="grid min-w-0 content-start gap-8 lg:col-span-2">
               <div class="sticky top-0 z-10 -mx-1 flex gap-1 overflow-x-auto border-b border-zinc-800 bg-zinc-950/95 px-1 py-1 backdrop-blur">
                 {(
                   [
@@ -296,16 +296,16 @@ export default function GoalDetail() {
                   </button>
                 ))}
               </div>
-              <section classList={{ hidden: tab() !== "about" }}>
-                <div class="text-zinc-300 [&_a]:text-amber-300 [&_a]:underline [&_img]:rounded-lg [&_li]:ml-5 [&_li]:list-disc [&_ol]:grid [&_ol]:gap-1 [&_p]:my-2 [&_pre]:overflow-auto [&_pre]:rounded [&_pre]:bg-zinc-950 [&_pre]:p-3 [&_ul]:grid [&_ul]:gap-1 [&_h1]:mb-2 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-bold [&_blockquote]:border-l-2 [&_blockquote]:border-zinc-700 [&_blockquote]:pl-3">
+              <section classList={{ hidden: tab() !== "about" }} class="min-w-0">
+                <div class="min-w-0 break-words text-zinc-300 [&_a]:text-amber-300 [&_a]:underline [&_h1]:mb-2 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-bold [&_blockquote]:border-l-2 [&_blockquote]:border-zinc-700 [&_blockquote]:pl-3 [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-lg [&_li]:ml-5 [&_li]:list-disc [&_ol]:grid [&_ol]:gap-1 [&_p]:my-2 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-zinc-950 [&_pre]:p-3 [&_table]:block [&_table]:overflow-x-auto [&_ul]:grid [&_ul]:gap-1">
                   <Markdown source={card()?.description ?? ""} />
                 </div>
               </section>
-              <div classList={{ hidden: tab() !== "backers" }}>
+              <div classList={{ hidden: tab() !== "backers" }} class="min-w-0">
                 <SupporterHighlights supporters={supporters()} profiles={supporterProfiles()} />
                 <SupporterList supporters={supporters()} profiles={supporterProfiles()} />
               </div>
-              <div classList={{ hidden: tab() !== "comments" }}>
+              <div classList={{ hidden: tab() !== "comments" }} class="min-w-0">
                 <CommentSection
                   relayUrl={DEFAULT_RELAY}
                   relays={zapRelays()}
@@ -315,7 +315,7 @@ export default function GoalDetail() {
                   onComments={setAllComments}
                 />
               </div>
-              <div classList={{ hidden: tab() !== "updates" }}>
+              <div classList={{ hidden: tab() !== "updates" }} class="min-w-0">
                 <div class="grid gap-6">
                   {isAuthor() && (
                     <ReportForm
@@ -334,7 +334,7 @@ export default function GoalDetail() {
                   />
                 </div>
               </div>
-              <div classList={{ hidden: tab() !== "owner" }}>
+              <div classList={{ hidden: tab() !== "owner" }} class="min-w-0">
                 <div class="flex items-start gap-4 rounded-lg border border-zinc-800 bg-zinc-900 p-5">
                   <SafeImage
                     src={profile()?.image}
@@ -365,7 +365,7 @@ export default function GoalDetail() {
                 </div>
               </div>
             </div>
-            <aside class="grid content-start gap-4 self-start lg:sticky lg:top-4">
+            <aside class="grid min-w-0 content-start gap-4 self-start lg:sticky lg:top-4">
               <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
                 <p class="text-4xl font-bold text-amber-300">
                   {progressPercent(raised(), card()?.goalMsats ?? 0n)}%
