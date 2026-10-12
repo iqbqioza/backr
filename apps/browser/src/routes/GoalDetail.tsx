@@ -181,7 +181,7 @@ export default function GoalDetail() {
             </span>
             <span class="text-sm text-zinc-400">{deadline()}</span>
           </div>
-          <h1 class="mb-4 text-2xl font-bold leading-tight md:text-3xl">{card()?.title}</h1>
+          <h1 class="mb-4 break-words text-2xl font-bold leading-tight md:text-3xl">{card()?.title}</h1>
           <div class="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900">
             {card()?.image !== undefined ? (
               <img src={card()?.image} alt="" class={`w-full object-cover ${OGP_ASPECT_CLASS}`} />
@@ -434,7 +434,7 @@ export default function GoalDetail() {
                         onClick={() => {
                           setConfirming(false);
                         }}
-                        class="rounded border border-zinc-700 px-3 py-1 text-sm"
+                        class="rounded border border-zinc-700 px-3 py-1 text-sm text-zinc-100"
                       >
                         Cancel
                       </button>

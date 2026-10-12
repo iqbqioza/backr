@@ -42,13 +42,13 @@ function CommentRow(props: {
           <button
             type="button"
             onClick={() => props.onToggle(comment().id)}
-            class="w-5 shrink-0 rounded text-center font-mono text-sm text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
+            class="h-6 w-6 shrink-0 rounded text-center font-mono text-sm text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
             title={props.collapsed ? "Open" : "Collapse"}
           >
             {props.collapsed ? "+" : "–"}
           </button>
         ) : (
-          <span class="w-5 shrink-0 text-center font-mono text-sm text-zinc-700">•</span>
+          <span class="h-6 w-6 shrink-0 text-center font-mono text-sm text-zinc-700">•</span>
         )}
         {avatarImage(props.profiles, comment().pubkey) !== undefined ? (
           <img
@@ -233,7 +233,7 @@ function ReplyForm(props: {
     >
       <div class="flex gap-2">
         <input
-          class="w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm"
+          class="w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm text-zinc-100 focus:border-amber-400 focus:outline-none"
           placeholder={props.placeholder}
           value={props.body}
           onInput={(e) => {
@@ -252,7 +252,7 @@ function ReplyForm(props: {
           <button
             type="button"
             onClick={props.onCancel}
-            class="shrink-0 rounded border border-zinc-700 px-3 py-1.5 text-sm"
+            class="shrink-0 rounded border border-zinc-700 px-3 py-1.5 text-sm text-zinc-100"
           >
             Cancel
           </button>
@@ -268,6 +268,9 @@ function ReplyForm(props: {
   return (
     <section>
       {loading() && <p class="text-zinc-400">Loading…</p>}
+      {!loading() && comments().length === 0 && (
+        <p class="mb-2 text-sm text-zinc-400">No comments yet. Be the first!</p>
+      )}
       <ul class="grid gap-2 border-l-2 border-zinc-800 pl-2">
         {rows().map((node) => (
           <>

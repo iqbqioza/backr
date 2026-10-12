@@ -36,7 +36,7 @@ export default function InvoiceQrModal(props: {
   return (
     <Portal>
       <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true">
-        <div class="w-full max-w-sm rounded-lg border border-zinc-700 bg-zinc-900 p-5">
+        <div class="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-lg border border-zinc-700 bg-zinc-900 p-5">
           <div class="mb-3 flex items-center">
             <h2 class="text-lg font-semibold text-zinc-100">{props.heading}</h2>
             <button

@@ -127,7 +127,8 @@ export default function Create() {
       });
   };
 
-  const input = "w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2";
+  const input =
+    "w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100 focus:border-amber-400 focus:outline-none";
   const nowSec = () => Math.floor(Date.now() / 1000);
   const session = () => getSession();
 
@@ -142,7 +143,7 @@ export default function Create() {
       <div class="grid gap-6 md:grid-cols-2">
         <div class="grid content-start gap-3">
           {session() === null ? (
-            <label class="text-sm">
+            <label class="grid gap-1 text-sm">
               Creator (npub / hex)
               <input
                 class={input}
@@ -158,7 +159,7 @@ export default function Create() {
               Creator: {shortKey(session()?.pubkey ?? "")}
             </p>
           )}
-          <label class="text-sm">
+          <label class="grid gap-1 text-sm">
             Short description
             <input
               class={input}
@@ -169,7 +170,7 @@ export default function Create() {
               }}
             />
           </label>
-          <label class="text-sm">
+          <label class="grid gap-1 text-sm">
             Details
             <textarea
               class={input}
@@ -182,7 +183,7 @@ export default function Create() {
             />
           </label>
           <div class="grid grid-cols-2 gap-3">
-            <label class="text-sm">
+            <label class="grid gap-1 text-sm">
               Goal (sats)
               <input
                 class={input}
@@ -194,7 +195,7 @@ export default function Create() {
                 }}
               />
             </label>
-            <label class="text-sm">
+            <label class="grid gap-1 text-sm">
               Deadline (optional)
               <input
                 class={input}
@@ -206,7 +207,7 @@ export default function Create() {
               />
             </label>
           </div>
-          <label class="text-sm">
+          <label class="grid gap-1 text-sm">
             Image URL (optional)
             <input
               class={input}
@@ -220,7 +221,7 @@ export default function Create() {
           <button
             type="button"
             onClick={onPreview}
-            class="rounded border border-zinc-600 px-4 py-2 font-semibold hover:border-zinc-300"
+            class="rounded border border-zinc-600 px-4 py-2 font-semibold text-zinc-100 hover:border-zinc-300"
           >
             Review event
           </button>

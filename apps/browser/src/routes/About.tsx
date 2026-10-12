@@ -27,7 +27,7 @@ export default function About() {
       </section>
       <section>
         <h2 class="mb-2 font-semibold">Supported NIPs</h2>
-        <div class="overflow-hidden rounded-lg border border-zinc-800">
+        <div class="overflow-x-auto rounded-lg border border-zinc-800">
           <table class="w-full text-sm">
             <tbody>
               {NIPS.map((row) => (

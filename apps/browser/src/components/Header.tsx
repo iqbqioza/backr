@@ -96,11 +96,12 @@ export default function Header() {
   };
 
   const session = () => getSession();
-  const input = "w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm";
+  const input =
+    "w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm text-zinc-100 focus:border-amber-400 focus:outline-none";
 
   return (
     <header class="border-b border-zinc-800">
-      <nav class="mx-auto flex max-w-4xl items-center gap-6 px-4 py-3">
+      <nav class="mx-auto flex max-w-4xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:gap-x-6">
         <a href="/" class="text-lg font-bold tracking-tight">
           {NAV.brand}
         </a>
@@ -142,7 +143,7 @@ export default function Header() {
       </nav>
       {open() && (
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div class="w-full max-w-md rounded-lg border border-zinc-700 bg-zinc-900 p-5">
+          <div class="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-zinc-700 bg-zinc-900 p-5">
             <div class="mb-4 flex items-center">
               <h2 class="text-lg font-semibold">{AUTH.title}</h2>
               <button

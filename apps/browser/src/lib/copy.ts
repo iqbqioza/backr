@@ -172,6 +172,9 @@ export const ACTIVITY = {
 
 export const COMMENTS = {
   ...SUPPORTERS,
+  title: (count: number) => `Comments (${count})`,
+  empty: "No comments yet. Be the first!",
+  section: (count: number) => `Comments (${count})`,
   loading: "Loading comments…",
   needLogin: "Log in to post a comment.",
   inputPlaceholder: "Write a comment (plain text)",

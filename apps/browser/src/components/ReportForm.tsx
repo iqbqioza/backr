@@ -40,7 +40,7 @@ export default function ReportForm(props: {
     <div class="rounded-lg border border-zinc-800 bg-zinc-900 p-3">
       <h3 class="mb-2 font-medium">Write an update</h3>
       <input
-        class="w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm"
+        class="w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm text-zinc-100 focus:border-amber-400 focus:outline-none"
         placeholder={REPORTS.titlePlaceholder}
         value={title()}
         onInput={(e) => {
@@ -48,7 +48,7 @@ export default function ReportForm(props: {
         }}
       />
       <textarea
-        class="mt-2 w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm"
+        class="mt-2 w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm text-zinc-100 focus:border-amber-400 focus:outline-none"
         rows={4}
         placeholder={REPORTS.bodyPlaceholder}
         value={body()}

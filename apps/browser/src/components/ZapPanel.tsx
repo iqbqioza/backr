@@ -236,7 +236,7 @@ export default function ZapPanel(props: {
               </button>
             ))}
             <input
-              class="w-32 rounded border border-zinc-700 bg-zinc-950 px-3 py-1 text-sm text-zinc-100"
+              class="w-32 rounded border border-zinc-700 bg-zinc-950 px-3 py-1 text-sm text-zinc-100 focus:border-amber-400 focus:outline-none"
               inputMode="numeric"
               placeholder="Custom amount"
               value={custom()}
@@ -246,7 +246,7 @@ export default function ZapPanel(props: {
             />
           </div>
           <input
-            class="mt-2 w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm text-zinc-100"
+            class="mt-2 w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm text-zinc-100 focus:border-amber-400 focus:outline-none"
             placeholder="Support message (optional)"
             value={comment()}
             onInput={(e) => {

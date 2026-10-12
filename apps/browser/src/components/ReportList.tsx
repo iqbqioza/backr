@@ -76,7 +76,7 @@ export default function ReportList(props: {
       });
   };
 
-  const input = "w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm";
+  const input = "w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm text-zinc-100 focus:border-amber-400 focus:outline-none";
 
   return (
     <section>
@@ -134,7 +134,7 @@ export default function ReportList(props: {
                           onClick={() => {
                             setEditing(null);
                           }}
-                          class="rounded border border-zinc-700 px-3 py-1 text-sm"
+                          class="rounded border border-zinc-700 px-3 py-1 text-sm text-zinc-100"
                         >
                           Cancel
                         </button>
