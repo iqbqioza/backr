@@ -6,8 +6,9 @@ import {
   type CommentTarget,
   type CommentView,
 } from "backr-nostr-nips";
-import { getSession, signWithSession } from "./auth";
-import { fetchEvents, publishEvent } from "./relay";
+import { getSession, getUserRelays, signWithSession } from "./auth";
+import { DEFAULT_RELAY } from "./const";
+import { fetchEvents, publishEventMulti } from "./relay";
 
 export type { CommentView };
 
@@ -22,6 +23,26 @@ export async function fetchComments(
     if (!isGoalComment(ev, goalId)) continue;
     const view = parseComment(ev);
     if (view !== null) out.push(view);
+  }
+  return out.sort((a, b) => a.createdAt - b.createdAt);
+}
+
+/** 複数リレーからコメントを集めて id で重複排除 (古い順) */
+export async function fetchCommentsMulti(
+  relayUrls: string[],
+  goalId: string,
+): Promise<CommentView[]> {
+  const settled = await Promise.allSettled(relayUrls.map((url) => fetchComments(url, goalId)));
+  const seen = new Set<string>();
+  const out: CommentView[] = [];
+  for (const s of settled) {
+    if (s.status !== "fulfilled") continue;
+    for (const view of s.value) {
+      if (!seen.has(view.id)) {
+        seen.add(view.id);
+        out.push(view);
+      }
+    }
   }
   return out.sort((a, b) => a.createdAt - b.createdAt);
 }
@@ -122,7 +143,10 @@ export async function postComment(args: {
   if (draft === null) throw new Error("Could not build comment");
   const signed = await signWithSession(draft);
   if (signed === null) throw new Error("Signing failed");
-  const result = await publishEvent(args.relayUrl, signed);
+  const result = await publishEventMulti(
+    [...new Set([args.relayUrl, DEFAULT_RELAY, ...getUserRelays().write.slice(0, 3)])],
+    signed,
+  );
   if (!result.accepted) throw new Error(`Relay rejected: ${result.message}`);
   const view = parseComment(signed);
   if (view === null) throw new Error("unreachable");

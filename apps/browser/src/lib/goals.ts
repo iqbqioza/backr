@@ -28,11 +28,40 @@ export async function fetchGoalCards(relayUrl: string): Promise<GoalCardData[]> 
   return cards.sort((a, b) => b.createdAt - a.createdAt);
 }
 
+/** 複数リレーから一覧を集めて id で重複排除 (新しい順) */
+export async function fetchGoalCardsMulti(relayUrls: string[]): Promise<GoalCardData[]> {
+  const settled = await Promise.allSettled(relayUrls.map((url) => fetchGoalCards(url)));
+  const seen = new Map<string, GoalCardData>();
+  for (const s of settled) {
+    if (s.status !== "fulfilled") continue;
+    for (const card of s.value) {
+      const current = seen.get(card.id);
+      if (current === undefined || card.createdAt > current.createdAt) {
+        seen.set(card.id, card);
+      }
+    }
+  }
+  return [...seen.values()].sort((a, b) => b.createdAt - a.createdAt);
+}
+
 /** 詳細: 単一 9041 を id 取得 */
 export async function fetchGoalById(relayUrl: string, id: string): Promise<GoalCardData | null> {
   const events = await fetchEvents([{ ids: [id] }], relayUrl);
   const found = events.find((ev) => ev.id === id && ev.kind === 9041);
   return found === undefined ? null : toGoalCard(found);
+}
+
+/** 複数リレーを順に試し、最初に見つかった goal を返す */
+export async function fetchGoalByIdMulti(relayUrls: string[], id: string): Promise<GoalCardData | null> {
+  for (const url of [...new Set(relayUrls)]) {
+    try {
+      const found = await fetchGoalById(url, id);
+      if (found !== null) return found;
+    } catch {
+      // 次のリレーへ
+    }
+  }
+  return null;
 }
 
 /** zap receipt (kind:9735) を goalId で取得 */
@@ -178,6 +207,23 @@ export async function fetchProfile(
   return profiles.get(pubkey) ?? null;
 }
 
+/** 複数リレーを順に試すプロフィール取得 */
+export async function fetchProfileMulti(
+  relayUrls: string[],
+  pubkey: string,
+): Promise<ProfileView | null> {
+  for (const url of [...new Set(relayUrls)]) {
+    try {
+      const profiles = await fetchProfiles(url, [pubkey]);
+      const found = profiles.get(pubkey);
+      if (found !== undefined) return found;
+    } catch {
+      // 次のリレーへ
+    }
+  }
+  return null;
+}
+
 /** kind:0 群を pubkey → ProfileView に整形 (純粋関数) */
 export function profilesByKey(events: NostrEventLike[]): Map<string, ProfileView> {
   const map = new Map<string, ProfileView>();
@@ -216,16 +262,27 @@ export async function fetchProfilesMulti(
   return merged;
 }
 
-/** 作成者の NIP-65 read リレー (最大3件)。取得失敗時は空 */
-export async function fetchAuthorReadRelays(relayUrl: string, pubkey: string): Promise<string[]> {
+/** NIP-65 リレーリスト (kind:10002) を取得する。失敗時は空 */
+export async function fetchRelayList(
+  relayUrl: string,
+  pubkey: string,
+): Promise<{ read: string[]; write: string[] }> {
   try {
     const events = await fetchEvents([{ kinds: [10002], authors: [pubkey], limit: 1 }], relayUrl);
     const found = events.find((ev) => ev.kind === 10002 && ev.pubkey === pubkey);
-    if (found === undefined) return [];
-    return (parseRelayList(found)?.read ?? []).slice(0, 3);
+    if (found === undefined) return { read: [], write: [] };
+    const parsed = parseRelayList(found);
+    if (parsed === null) return { read: [], write: [] };
+    return { read: parsed.read.slice(0, 5), write: parsed.write.slice(0, 5) };
   } catch {
-    return [];
+    return { read: [], write: [] };
   }
+}
+
+/** 作成者の NIP-65 read リレー (最大3件)。取得失敗時は空 */
+export async function fetchAuthorReadRelays(relayUrl: string, pubkey: string): Promise<string[]> {
+  const list = await fetchRelayList(relayUrl, pubkey);
+  return list.read.slice(0, 3);
 }
 
 export type GoalStatus = "achieved" | "ended" | "ending-soon" | "active";

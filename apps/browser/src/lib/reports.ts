@@ -1,7 +1,8 @@
 import { buildReport, randomHex } from "backr-nostr-nips";
-import { getSession, signWithSession } from "./auth";
+import { getSession, getUserRelays, signWithSession } from "./auth";
+import { DEFAULT_RELAY } from "./const";
 import { dedupeReports, type ReportData } from "./goals";
-import { publishEvent } from "./relay";
+import { publishEventMulti } from "./relay";
 
 async function publishReport(args: {
   relayUrl: string;
@@ -28,7 +29,10 @@ async function publishReport(args: {
   });  if (draft === null) throw new Error("Could not build update");
   const signed = await signWithSession(draft);
   if (signed === null) throw new Error("Signing failed");
-  const result = await publishEvent(args.relayUrl, signed);
+  const result = await publishEventMulti(
+    [...new Set([args.relayUrl, DEFAULT_RELAY, ...getUserRelays().write.slice(0, 3)])],
+    signed,
+  );
   if (!result.accepted) throw new Error(`Relay rejected: ${result.message}`);
   return {
     id: signed.id,

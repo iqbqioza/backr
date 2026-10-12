@@ -1,12 +1,13 @@
 import { encodeNevent } from "backr-nostr-nips";
 import { formatSats, progressPercent, remainingLabel } from "backr-utils";
-import { createSignal, onMount, type JSX } from "solid-js";
+import { createEffect, createSignal, onMount, type JSX } from "solid-js";
 import GoalCard from "../components/GoalCard";
 import SafeImage from "../components/SafeImage";
 import RelayBar from "../components/RelayBar";
 import { EmptyState, ErrorState, Loading } from "../components/States";
 import { DEFAULT_RELAY } from "../lib/const";
-import { fetchGoalCards, fetchProfiles, type GoalCardData } from "../lib/goals";
+import { getUserRelays } from "../lib/auth";
+import { fetchGoalCardsMulti, fetchProfiles, type GoalCardData } from "../lib/goals";
 import { pickSections } from "../lib/sections";
 import { fetchCardZapData, type ValidatedGoalZap } from "../lib/supporters";
 import ProgressMeter from "../components/ProgressMeter";
@@ -35,8 +36,9 @@ export default function Home() {
   const load = () => {
     setLoading(true);
     setError(null);
+    const urls = [...new Set([relay(), DEFAULT_RELAY, ...getUserRelays().read.slice(0, 3)])];
     const url = relay();
-    fetchGoalCards(url)
+    fetchGoalCardsMulti(urls)
       .then((fetched) => {
         setCards(fetched);
         return fetchProfiles(url, fetched.map((c) => c.pubkey));
@@ -54,6 +56,15 @@ export default function Home() {
   onMount(() => {
     load();
     if (typeof document !== "undefined") document.title = "Backr — Nostr crowdfunding";
+  });
+
+  // 本人のリレーセットが届いたら発見範囲を広げて再取得 (初回のみ)
+  let relayExpanded = false;
+  createEffect(() => {
+    if (getUserRelays().read.length > 0 && !relayExpanded) {
+      relayExpanded = true;
+      load();
+    }
   });
 
   const sections = () => pickSections(cards(), zapData());

@@ -3,7 +3,7 @@ import { canSign, getSession } from "../lib/auth";
 import {
   buildCommentTree,
   countDescendants,
-  fetchComments,
+  fetchCommentsMulti,
   flattenVisible,
   postComment,
   type CommentView,
@@ -119,6 +119,7 @@ function CommentRow(props: {
 
 export default function CommentSection(props: {
   relayUrl: string;
+  relays?: string[];
   goalId: string;
   goalAuthor: string;
   onCount?: (count: number) => void;
@@ -144,7 +145,7 @@ export default function CommentSection(props: {
 
   const load = () => {
     setLoading(true);
-    fetchComments(props.relayUrl, props.goalId)
+    fetchCommentsMulti(props.relays ?? [props.relayUrl], props.goalId)
       .then((fetched) => {
         setComments(fetched);
         props.onCount?.(fetched.length);

@@ -15,14 +15,14 @@ import SupporterHighlights from "../components/SupporterHighlights";
 import { EmptyState, ErrorState, Loading } from "../components/States";
 import SupporterList from "../components/SupporterList";
 import ZapPanel from "../components/ZapPanel";
-import { getSession } from "../lib/auth";
+import { getSession, getUserRelays } from "../lib/auth";
 import { DEFAULT_RELAY } from "../lib/const";
 import { ACTIVITY, ZAP } from "../lib/copy";
 import { requestDeletion } from "../lib/deletion";
 import {
   fetchAuthorReadRelays,
-  fetchGoalById,
-  fetchProfile,
+  fetchGoalByIdMulti,
+  fetchProfileMulti,
   fetchProfilesMulti,
   fetchReportsMulti,
   goalRemaining,
@@ -61,11 +61,19 @@ export default function GoalDetail() {
   const [zapVisible, setZapVisible] = createSignal(false);
   const [extraRelays, setExtraRelays] = createSignal<string[]>([]);
 
-  /** 選択リレー + goal の relays タグ + 作成者の NIP-65 read リレー */
+  /** 選択リレー + デフォルト + goal の relays タグ + 作成者の NIP-65 read + 本人の read リレー */
   const zapRelays = (): string[] => {
     const current = card();
     if (current === null) return [relay()];
-    return [...new Set([relay(), ...current.relays.slice(0, 3), ...extraRelays()])];
+    return [
+      ...new Set([
+        relay(),
+        DEFAULT_RELAY,
+        ...current.relays.slice(0, 3),
+        ...extraRelays(),
+        ...getUserRelays().read.slice(0, 3),
+      ]),
+    ];
   };
 
   const load = () => {
@@ -80,14 +88,15 @@ export default function GoalDetail() {
     const goalId = decoded.id;
     const url = decoded.relays[0] ?? relay();
     setRelay(url);
-    fetchGoalById(url, goalId)
+    const goalCandidates = [...new Set([...decoded.relays.slice(0, 3), relay(), DEFAULT_RELAY])];
+    fetchGoalByIdMulti(goalCandidates, goalId)
       .then((found) => {
         if (found === null) {
           setError("Project not found");
           return;
         }
         setCard(found);
-        return fetchProfile(url, found.pubkey).then((fetchedProfile) => {
+        return fetchProfileMulti([url, DEFAULT_RELAY], found.pubkey).then((fetchedProfile) => {
           setProfile(fetchedProfile);
           return fetchAuthorReadRelays(url, found.pubkey).then((authorRelays) => {
             setExtraRelays(authorRelays);
@@ -127,6 +136,15 @@ export default function GoalDetail() {
     const title = card()?.title;
     if (typeof document !== "undefined") {
       document.title = title !== undefined ? `${title} — Backr` : "Backr — Nostr crowdfunding";
+    }
+  });
+
+  // 本人のリレーセットが届いたら集計範囲を広げて更新 (初回のみ)
+  let statsExpanded = false;
+  createEffect(() => {
+    if (getUserRelays().read.length > 0 && !statsExpanded && card() !== null) {
+      statsExpanded = true;
+      void refreshStats(profile());
     }
   });
 
@@ -286,6 +304,7 @@ export default function GoalDetail() {
               <div classList={{ hidden: tab() !== "comments" }}>
                 <CommentSection
                   relayUrl={relay()}
+                  relays={zapRelays()}
                   goalId={card()?.id ?? ""}
                   goalAuthor={card()?.pubkey ?? ""}
                   onCount={setCommentCount}

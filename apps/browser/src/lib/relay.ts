@@ -108,3 +108,36 @@ export function fetchEvents(
     });
   });
 }
+
+/**
+ * 複数リレーへ並列公開する。1件でも accepted なら成功。
+ * kind:10002 の更新は行わない (読み取り専用)。
+ */
+export async function publishEventMulti(
+  relayUrls: string[],
+  event: NostrEventLike,
+  timeoutMs = 10000,
+): Promise<{ accepted: boolean; message: string; acceptedRelays: string[] }> {
+  const urls = [...new Set(relayUrls)];
+  const settled = await Promise.allSettled(urls.map((url) => publishEvent(url, event, timeoutMs)));
+  const acceptedRelays: string[] = [];
+  const failures: string[] = [];
+  settled.forEach((s, i) => {
+    const url = urls[i] ?? "";
+    if (s.status === "fulfilled" && s.value.accepted) {
+      acceptedRelays.push(url);
+    } else if (s.status === "fulfilled") {
+      failures.push(`${url}: ${s.value.message}`);
+    } else {
+      failures.push(`${url}: ${s.reason instanceof Error ? s.reason.message : "failed"}`);
+    }
+  });
+  return {
+    accepted: acceptedRelays.length > 0,
+    message:
+      acceptedRelays.length > 0
+        ? `accepted by ${acceptedRelays.length} relay(s)`
+        : failures.join("; "),
+    acceptedRelays,
+  };
+}

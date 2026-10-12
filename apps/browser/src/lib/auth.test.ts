@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   canSign,
   getSession,
+  getUserRelays,
   loginNsec,
   loginReadonly,
   logout,
@@ -80,6 +81,15 @@ describe("session", () => {
     });
     expect(signed?.pubkey).toBe(info.pubkey);
     logout();
+  });
+});
+
+describe("user relays", () => {
+  it("defaults to empty and clears on logout", () => {
+    expect(getUserRelays()).toEqual({ read: [], write: [] });
+    loginReadonly(PUBKEY_HEX);
+    logout();
+    expect(getUserRelays()).toEqual({ read: [], write: [] });
   });
 });
 

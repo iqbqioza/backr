@@ -10,6 +10,8 @@ import {
   type UnsignedEvent,
 } from "backr-nostr-nips";
 import { connectBunker, type BunkerClient } from "backr-nostr-ws";
+import { DEFAULT_RELAY } from "./const";
+import { fetchRelayList } from "./goals";
 
 export type AuthMethod = "nip07" | "nsec" | "bunker" | "readonly";
 
@@ -17,6 +19,13 @@ export interface Session {
   method: AuthMethod;
   pubkey: string;
 }
+
+export interface UserRelays {
+  read: string[];
+  write: string[];
+}
+
+const EMPTY_RELAYS: UserRelays = { read: [], write: [] };
 
 export interface NostrExtension {
   getPublicKey(): Promise<string>;
@@ -32,6 +41,19 @@ declare global {
 const [session, setSession] = createSignal<Session | null>(null);
 export function getSession(): Session | null {
   return session();
+}
+
+const [userRelays, setUserRelays] = createSignal<UserRelays>(EMPTY_RELAYS);
+/** ログイン者の NIP-65 リレーセット (取得失敗時は空) */
+export function getUserRelays(): UserRelays {
+  return userRelays();
+}
+
+/** kind:10002 を裏で取得して覚える。失敗してもログインは継続する */
+function loadUserRelays(pubkey: string): void {
+  fetchRelayList(DEFAULT_RELAY, pubkey).then(setUserRelays).catch(() => {
+    setUserRelays(EMPTY_RELAYS);
+  });
 }
 
 const SESSION_STORAGE_KEY = "backr:session";
@@ -87,6 +109,8 @@ export function loginNip07(pubkey: string): void {
   bunkerClient?.close();
   bunkerClient = null;
   setSession({ method: "nip07", pubkey });
+  setUserRelays(EMPTY_RELAYS);
+  loadUserRelays(pubkey);
   persistSession();
 }
 
@@ -96,6 +120,8 @@ export function loginNsec(secretHex: string, pubkey: string): void {
   bunkerClient?.close();
   bunkerClient = null;
   setSession({ method: "nsec", pubkey });
+  setUserRelays(EMPTY_RELAYS);
+  loadUserRelays(pubkey);
   persistSession();
 }
 
@@ -104,6 +130,8 @@ export function loginReadonly(pubkey: string): void {
   bunkerClient?.close();
   bunkerClient = null;
   setSession({ method: "readonly", pubkey });
+  setUserRelays(EMPTY_RELAYS);
+  loadUserRelays(pubkey);
   persistSession();
 }
 
@@ -116,6 +144,8 @@ export async function loginBunker(bunkerUrl: string): Promise<void> {
   bunkerClient?.close();
   bunkerClient = client;
   setSession({ method: "bunker", pubkey: client.userPubkey });
+  setUserRelays(EMPTY_RELAYS);
+  loadUserRelays(client.userPubkey);
   persistSession();
 }
 
@@ -124,6 +154,7 @@ export function logout(): void {
   bunkerClient?.close();
   bunkerClient = null;
   setSession(null);
+  setUserRelays(EMPTY_RELAYS);
   persistSession();
 }
 
@@ -188,3 +219,7 @@ export async function signWithSession(unsigned: UnsignedEvent): Promise<NostrEve
 }
 
 restoreSession();
+{
+  const s = getSession();
+  if (s !== null) loadUserRelays(s.pubkey);
+}

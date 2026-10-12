@@ -7,14 +7,14 @@ import {
 } from "backr-nostr-nips";
 import { countdownLabel, formatSats } from "backr-utils";
 import { createSignal, onMount } from "solid-js";
-import { canSign, getSession, signWithSession } from "../lib/auth";
+import { canSign, getSession, getUserRelays, signWithSession } from "../lib/auth";
 import { OGP_ASPECT_CLASS } from "../components/thumb";
 import { CREATE } from "../lib/copy";
 import Markdown from "../components/Markdown";
 import RelayBar from "../components/RelayBar";
 import SafeImage from "../components/SafeImage";
 import { DEFAULT_RELAY } from "../lib/const";
-import { publishEvent } from "../lib/relay";
+import { publishEventMulti } from "../lib/relay";
 import { shortKey } from "../components/people";
 
 export default function Create() {
@@ -117,13 +117,22 @@ export default function Create() {
           setErrors([CREATE.errors.noSignature]);
           return;
         }
-        return publishEvent(relay().trim().length > 0 ? relay().trim() : DEFAULT_RELAY, signed).then((result) => {
+        const targets = [
+          ...new Set([
+            relay().trim().length > 0 ? relay().trim() : DEFAULT_RELAY,
+            DEFAULT_RELAY,
+            ...getUserRelays().write.slice(0, 3),
+          ]),
+        ];
+        return publishEventMulti(targets, signed).then((result) => {
           if (!result.accepted) {
             setErrors([CREATE.errors.rejected(result.message)]);
             return;
           }
-          const target = relay().trim().length > 0 ? relay().trim() : DEFAULT_RELAY;
-          const nevent = encodeNevent({ id: signed.id, relays: [target] });
+          const nevent = encodeNevent({
+            id: signed.id,
+            relays: (result.acceptedRelays.length > 0 ? result.acceptedRelays : targets).slice(0, 3),
+          });
           setPublished(nevent);
         });
       })
