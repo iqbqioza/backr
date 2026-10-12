@@ -12,7 +12,7 @@ import { OGP_ASPECT_CLASS } from "../components/thumb";
 import { CREATE } from "../lib/copy";
 import Markdown from "../components/Markdown";
 import SafeImage from "../components/SafeImage";
-import { DEFAULT_RELAY } from "../lib/const";
+import { CREATOR_PUBKEY, DEFAULT_RELAY } from "../lib/const";
 import { publishEventMulti } from "../lib/relay";
 import { shortKey } from "../components/people";
 
@@ -149,6 +149,17 @@ export default function Create() {
   onMount(() => {
     if (typeof document !== "undefined") document.title = "Start a project — Backr";
   });
+
+  if (session()?.pubkey !== CREATOR_PUBKEY) {
+    return (
+      <div class="py-8 text-center">
+        <p class="text-lg font-semibold">Only the site owner can start a project.</p>
+        <a href="/" class="mt-2 inline-block text-sm text-amber-300 underline">
+          ← Back to list
+        </a>
+      </div>
+    );
+  }
 
   return (
     <div>

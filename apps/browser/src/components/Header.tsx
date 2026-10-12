@@ -12,6 +12,7 @@ import {
   type AuthMethod,
 } from "../lib/auth";
 import { AUTH, NAV } from "../lib/copy";
+import { CREATOR_PUBKEY } from "../lib/const";
 import { shortKey } from "./people";
 
 const METHOD_LABEL: Record<AuthMethod, string> = {
@@ -97,6 +98,7 @@ export default function Header() {
   };
 
   const session = () => getSession();
+  const isCreator = () => session()?.pubkey === CREATOR_PUBKEY;
   const input =
     "w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm text-zinc-100 focus:border-amber-400 focus:outline-none";
 
@@ -106,12 +108,11 @@ export default function Header() {
         <a href="/" class="text-lg font-bold tracking-tight">
           {NAV.brand}
         </a>
-        <a href="/" class="text-sm text-zinc-400 hover:text-zinc-100">
-          {NAV.discover}
-        </a>
-        <a href="/create" class="text-sm text-zinc-400 hover:text-zinc-100">
-          {NAV.create}
-        </a>
+        {isCreator() && (
+          <a href="/create" class="text-sm text-zinc-400 hover:text-zinc-100">
+            {NAV.create}
+          </a>
+        )}
         <a href="/about" class="text-sm text-zinc-400 hover:text-zinc-100">
           {NAV.about}
         </a>

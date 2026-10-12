@@ -2,7 +2,6 @@
 
 export const NAV = {
   brand: "Backr",
-  discover: "Discover",
   create: "Start a project",
   about: "About",
   login: "Log in",
