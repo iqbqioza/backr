@@ -1,4 +1,4 @@
-import { useLocation, useNavigate, useParams } from "@solidjs/router";
+import { useLocation, useParams } from "@solidjs/router";
 import { decodeNevent, encodeNevent } from "backr-nostr-nips";
 import { countdownLabel, formatSats, formatSatsBtc, progressPercent, timeAgo } from "backr-utils";
 import { createEffect, createSignal, onCleanup, onMount } from "solid-js";
@@ -39,14 +39,14 @@ import { fetchGoalZapDataMulti, type Supporter } from "../lib/supporters";
 export default function GoalDetail() {
   const params = useParams();
   const location = useLocation();
-  const navigate = useNavigate();
-  const tab = () => {
-    const parts = location.pathname.split("/").filter(Boolean);
-    return parts.length > 2 ? parts[2] : "about";
-  };
+  const initialParts = location.pathname.split("/").filter(Boolean);
+  const [tab, setTabSignal] = createSignal<string>(
+    initialParts.length > 2 ? initialParts[2] : "about",
+  );
   const setTab = (id: string) => {
+    setTabSignal(id);
     const base = `/g/${params["nevent"] ?? ""}`;
-    navigate(id === "about" ? base : `${base}/${id}`, { resolve: false });
+    history.pushState(null, "", id === "about" ? base : `${base}/${id}`);
   };
   const [card, setCard] = createSignal<GoalCardData | null>(null);
   const [raised, setRaised] = createSignal(0n);
@@ -178,6 +178,14 @@ export default function GoalDetail() {
     }, 1000);
     onCleanup(() => {
       clearInterval(timer);
+    });
+    const onPop = () => {
+      const parts = location.pathname.split("/").filter(Boolean);
+      setTabSignal(parts.length > 2 ? parts[2] : "about");
+    };
+    window.addEventListener("popstate", onPop);
+    onCleanup(() => {
+      window.removeEventListener("popstate", onPop);
     });
   });
 

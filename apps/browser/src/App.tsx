@@ -34,7 +34,7 @@ export default function App() {
         >
           <Router>
             <Route path="/" component={Home} />
-            <Route path="/g/:nevent" component={GoalDetail} />
+            <Route path="/g/:nevent/*" component={GoalDetail} />
             <Route path="/create" component={Create} />
             <Route path="/about" component={About} />
             <Route path="*" component={NotFound} />

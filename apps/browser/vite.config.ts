@@ -8,6 +8,7 @@ export default defineConfig({
     host: true,
     strictPort: true,
   },
+  appType: 'spa',
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
