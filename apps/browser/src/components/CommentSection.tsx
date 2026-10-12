@@ -306,8 +306,8 @@ function ReplyForm(props: {
           </>
         ))}
       </ul>
-      <div class="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-3">
-        {canSign() ? (
+      {canSign() ? (
+        <div class="mt-3">
           <ReplyForm
             body={body()}
             posting={posting()}
@@ -321,10 +321,12 @@ function ReplyForm(props: {
             onSubmit={() => onPost(null)}
             onCancel={null}
           />
-        ) : (
-          <p class="text-sm text-zinc-400">Please log in to post a comment.</p>
-        )}
-      </div>
+        </div>
+      ) : (
+        <p class="mt-3 rounded-lg border border-zinc-800 bg-zinc-900 p-3 text-sm text-zinc-400">
+          Please log in to post a comment.
+        </p>
+      )}
       {error() !== null && <p class="mt-2 text-sm text-red-400">{error()}</p>}
     </section>
   );
