@@ -10,6 +10,8 @@ export default function ReportForm(props: {
   onPosted: (report: ReportData) => void;
 }) {
   const [title, setTitle] = createSignal("");
+  const [summary, setSummary] = createSignal("");
+  const [image, setImage] = createSignal("");
   const [body, setBody] = createSignal("");
   const [posting, setPosting] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
@@ -18,10 +20,19 @@ export default function ReportForm(props: {
     if (posting() || title().trim().length === 0 || body().trim().length === 0) return;
     setPosting(true);
     setError(null);
-    postReport({ relayUrl: props.relayUrl, goalId: props.goalId, title: title().trim(), content: body() })
+    postReport({
+      relayUrl: props.relayUrl,
+      goalId: props.goalId,
+      title: title().trim(),
+      summary: summary().trim().length > 0 ? summary().trim() : undefined,
+      image: image().trim().length > 0 ? image().trim() : undefined,
+      content: body(),
+    })
       .then((report) => {
         props.onPosted(report);
         setTitle("");
+        setSummary("");
+        setImage("");
         setBody("");
       })
       .catch((err: unknown) => {
@@ -45,6 +56,22 @@ export default function ReportForm(props: {
         value={title()}
         onInput={(e) => {
           setTitle(e.currentTarget.value);
+        }}
+      />
+      <input
+        class="mt-2 w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm text-zinc-100 focus:border-amber-400 focus:outline-none"
+        placeholder="Summary (optional)"
+        value={summary()}
+        onInput={(e) => {
+          setSummary(e.currentTarget.value);
+        }}
+      />
+      <input
+        class="mt-2 w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm text-zinc-100 focus:border-amber-400 focus:outline-none"
+        placeholder="Image URL (optional)"
+        value={image()}
+        onInput={(e) => {
+          setImage(e.currentTarget.value);
         }}
       />
       <textarea

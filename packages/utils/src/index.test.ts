@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countdownLabel, formatSats, meterWidthPercent, msatsToSatsString, progressPercent, remainingLabel, timeAgo } from "./index";
+import { countdownLabel, formatSats, formatSatsBtc, meterWidthPercent, msatsToSatsString, progressPercent, remainingLabel, timeAgo } from "./index";
 
 describe("msatsToSatsString", () => {
   it("formats exact sats", () => {
@@ -19,6 +19,15 @@ describe("msatsToSatsString", () => {
 describe("formatSats", () => {
   it("appends unit", () => {
     expect(formatSats(21000000n)).toBe("21,000 sats");
+  });
+});
+
+describe("formatSatsBtc", () => {
+  it("formats whole and fractional BTC", () => {
+    expect(formatSatsBtc(100000000000n)).toBe("1 BTC");
+    expect(formatSatsBtc(21000000n)).toBe("0.00021 BTC");
+    expect(formatSatsBtc(1500n)).toBe("0.00000001 BTC");
+    expect(formatSatsBtc(0n)).toBe("0 BTC");
   });
 });
 

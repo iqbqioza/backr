@@ -9,6 +9,7 @@ async function publishReport(args: {
   identifier: string;
   title: string;
   summary?: string;
+  image?: string;
   content: string;
 }): Promise<ReportData> {
   const session = getSession();
@@ -22,9 +23,9 @@ async function publishReport(args: {
     identifier: args.identifier,
     title: args.title,
     summary: args.summary,
+    image: args.image,
     content: args.content,
-  });
-  if (draft === null) throw new Error("Could not build update");
+  });  if (draft === null) throw new Error("Could not build update");
   const signed = await signWithSession(draft);
   if (signed === null) throw new Error("Signing failed");
   const result = await publishEvent(args.relayUrl, signed);
@@ -34,8 +35,10 @@ async function publishReport(args: {
     author: session.pubkey,
     identifier: args.identifier,
     title: args.title,
+    summary: args.summary,
     createdAt: signed.created_at,
     content: args.content,
+    image: args.image,
   };
 }
 
@@ -45,6 +48,7 @@ export function postReport(args: {
   goalId: string;
   title: string;
   summary?: string;
+  image?: string;
   content: string;
 }): Promise<ReportData> {
   return publishReport({
@@ -53,6 +57,7 @@ export function postReport(args: {
     identifier: `backr-${randomHex(8)}`,
     title: args.title,
     summary: args.summary,
+    image: args.image,
     content: args.content,
   });
 }
@@ -63,6 +68,8 @@ export function updateReport(args: {
   goalId: string;
   identifier: string;
   title: string;
+  summary?: string;
+  image?: string;
   content: string;
 }): Promise<ReportData> {
   return publishReport(args);

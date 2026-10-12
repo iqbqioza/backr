@@ -45,6 +45,14 @@ describe("toSupporters", () => {
       receipt("r1", 100, [["bolt11", "lnbc10u1abcdef"], ["description", DESC]]),
     ]);
     expect(supporters[0].pubkey).toBe("f".repeat(64));
+    expect(supporters[0].anonymous).toBe(false);
+  });
+  it("marks anonymous receipts without P or sender", () => {
+    const supporters = toSupporters([
+      receipt("r1", 100, [["bolt11", "lnbc10u1abcdef"]]),
+    ]);
+    expect(supporters).toHaveLength(1);
+    expect(supporters[0].anonymous).toBe(true);
   });
   it("skips invalid amounts and closed_at overflow", () => {
     const supporters = toSupporters(
@@ -60,9 +68,9 @@ describe("toSupporters", () => {
 
 describe("firstSupporter/topSupporters", () => {
   const list: Supporter[] = [
-    { pubkey: "a", msats: 100n, comment: "", createdAt: 300 },
-    { pubkey: "b", msats: 500n, comment: "", createdAt: 100 },
-    { pubkey: "c", msats: 300n, comment: "", createdAt: 200 },
+    { pubkey: "a", msats: 100n, comment: "", createdAt: 300, anonymous: false },
+    { pubkey: "b", msats: 500n, comment: "", createdAt: 100, anonymous: false },
+    { pubkey: "c", msats: 300n, comment: "", createdAt: 200, anonymous: false },
   ];
   it("finds earliest", () => {
     expect(firstSupporter(list)?.pubkey).toBe("b");

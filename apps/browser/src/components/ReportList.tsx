@@ -1,6 +1,8 @@
 import { createSignal } from "solid-js";
+import { encodeNaddr } from "backr-nostr-nips";
 import { OGP_ASPECT_CLASS } from "../components/thumb";
 import Markdown from "../components/Markdown";
+import SafeImage from "../components/SafeImage";
 import { getSession } from "../lib/auth";
 import { requestDeletion } from "../lib/deletion";
 import type { ReportData } from "../lib/goals";
@@ -15,10 +17,34 @@ export default function ReportList(props: {
   const [expanded, setExpanded] = createSignal<string | null>(null);
   const [editing, setEditing] = createSignal<string | null>(null);
   const [editTitle, setEditTitle] = createSignal("");
+  const [editSummary, setEditSummary] = createSignal("");
+  const [editImage, setEditImage] = createSignal("");
   const [editBody, setEditBody] = createSignal("");
   const [confirming, setConfirming] = createSignal<string | null>(null);
   const [working, setWorking] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
+  const [shared, setShared] = createSignal<string | null>(null);
+
+  const share = (report: ReportData) => {
+    const naddr = encodeNaddr({
+      identifier: report.identifier,
+      author: report.author,
+      kind: 30023,
+      relays: [props.relayUrl],
+    });
+    if (naddr === null || typeof navigator === "undefined" || navigator.clipboard === undefined) {
+      setError("Could not copy");
+      return;
+    }
+    navigator.clipboard
+      .writeText(`nostr:${naddr}`)
+      .then(() => {
+        setShared(report.id);
+      })
+      .catch(() => {
+        setError("Could not copy");
+      });
+  };
 
   const toggle = (id: string) => {
     setExpanded(expanded() === id ? null : id);
@@ -32,6 +58,8 @@ export default function ReportList(props: {
   const startEdit = (report: ReportData) => {
     setEditing(report.id);
     setEditTitle(report.title);
+    setEditSummary(report.summary ?? "");
+    setEditImage(report.image ?? "");
     setEditBody(report.content);
     setError(null);
   };
@@ -45,6 +73,8 @@ export default function ReportList(props: {
       goalId: props.goalId,
       identifier: report.identifier,
       title: editTitle().trim(),
+      summary: editSummary().trim().length > 0 ? editSummary().trim() : undefined,
+      image: editImage().trim().length > 0 ? editImage().trim() : undefined,
       content: editBody(),
     })
       .then((updated) => {
@@ -97,10 +127,11 @@ export default function ReportList(props: {
               {expanded() === report.id && (
                 <div class="mt-2 border-t border-zinc-800 pt-2">
                   {report.image !== undefined && (
-                    <img
+                    <SafeImage
                       src={report.image}
                       alt=""
-                      class={`mb-2 w-full rounded object-cover ${OGP_ASPECT_CLASS}`}
+                      imgClass={`mb-2 w-full rounded object-cover ${OGP_ASPECT_CLASS}`}
+                      fallback={<div class={`mb-2 hidden w-full ${OGP_ASPECT_CLASS}`} />}
                     />
                   )}
                   {editing() === report.id ? (
@@ -110,6 +141,22 @@ export default function ReportList(props: {
                         value={editTitle()}
                         onInput={(e) => {
                           setEditTitle(e.currentTarget.value);
+                        }}
+                      />
+                      <input
+                        class={input}
+                        placeholder="Summary (optional)"
+                        value={editSummary()}
+                        onInput={(e) => {
+                          setEditSummary(e.currentTarget.value);
+                        }}
+                      />
+                      <input
+                        class={input}
+                        placeholder="Image URL (optional)"
+                        value={editImage()}
+                        onInput={(e) => {
+                          setEditImage(e.currentTarget.value);
                         }}
                       />
                       <textarea
@@ -146,46 +193,57 @@ export default function ReportList(props: {
                       source={report.content}
                     />
                   )}
-                  {isMine(report) && editing() !== report.id && (
+                  {editing() !== report.id && (
                     <div class="mt-2 flex gap-2">
                       <button
                         type="button"
-                        onClick={() => startEdit(report)}
+                        onClick={() => share(report)}
                         class="text-xs text-zinc-400 hover:text-zinc-100"
                       >
-                        Edit
+                        {shared() === report.id ? "Copied" : "Share"}
                       </button>
-                      {confirming() === report.id ? (
-                        <span class="flex items-center gap-2 text-xs">
-                          <span class="text-zinc-300">Delete this update?</span>
+                      {isMine(report) && (
+                        <>
                           <button
                             type="button"
-                            onClick={() => remove(report)}
-                            disabled={working()}
-                            class="rounded bg-red-600 px-2 py-0.5 font-semibold text-white disabled:opacity-50"
+                            onClick={() => startEdit(report)}
+                            class="text-xs text-zinc-400 hover:text-zinc-100"
                           >
-                            Delete
+                            Edit
                           </button>
+                          {confirming() === report.id ? (
+                          <span class="flex items-center gap-2 text-xs">
+                            <span class="text-zinc-300">Delete this update?</span>
+                            <button
+                              type="button"
+                              onClick={() => remove(report)}
+                              disabled={working()}
+                              class="rounded bg-red-600 px-2 py-0.5 font-semibold text-white disabled:opacity-50"
+                            >
+                              Delete
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setConfirming(null);
+                              }}
+                              class="text-zinc-400 hover:text-zinc-100"
+                            >
+                              Cancel
+                            </button>
+                          </span>
+                        ) : (
                           <button
                             type="button"
                             onClick={() => {
-                              setConfirming(null);
+                              setConfirming(report.id);
                             }}
-                            class="text-zinc-400 hover:text-zinc-100"
+                            class="text-xs text-red-400 hover:text-red-300"
                           >
-                            Cancel
+                            Delete
                           </button>
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setConfirming(report.id);
-                          }}
-                          class="text-xs text-red-400 hover:text-red-300"
-                        >
-                          Delete
-                        </button>
+                      )}
+                        </>
                       )}
                     </div>
                   )}

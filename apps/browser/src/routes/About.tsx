@@ -1,3 +1,5 @@
+import { onMount } from "solid-js";
+
 const NIPS = [
   { nip: "NIP-01", use: "Keys, events, and relay messaging basic" },
   { nip: "NIP-19", use: "nevent / npub / nsec sharing & input format" },
@@ -7,6 +9,9 @@ const NIPS = [
 ];
 
 export default function About() {
+  onMount(() => {
+    if (typeof document !== "undefined") document.title = "About Backr";
+  });
   return (
     <article class="grid gap-6">
       <div>

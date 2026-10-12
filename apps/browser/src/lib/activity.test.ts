@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildActivityFeed, recentSupporterCount } from "./activity";
+import { buildActivityFeed, excerpt, recentSupporterCount } from "./activity";
 import type { CommentView } from "./comments";
 import type { ReportData } from "./goals";
 import type { Supporter } from "./supporters";
@@ -9,6 +9,7 @@ const supporter = (at: number): Supporter => ({
   msats: 1000n,
   comment: "",
   createdAt: at,
+  anonymous: false,
 });
 const comment = (at: number): CommentView => ({
   id: "b".repeat(64),
@@ -38,8 +39,13 @@ describe("buildActivityFeed", () => {
   it("renders English item texts", () => {
     const feed = buildActivityFeed([supporter(100)], [comment(200)], [report(300)], 5);
     expect(feed.find((f) => f.kind === "zap")?.text).toBe("Zapped 1 sats");
-    expect(feed.find((f) => f.kind === "comment")?.text).toBe("Commented");
+    expect(feed.find((f) => f.kind === "comment")?.text).toBe('Commented "x"');
     expect(feed.find((f) => f.kind === "report")?.text).toBe('Update "進捗"');
+  });
+  it("truncates long comment previews", () => {
+    expect(excerpt(`a\nb`)).toBe("a");
+    expect(excerpt("x".repeat(61))).toBe(`${"x".repeat(60)}…`);
+    expect(excerpt("   ")).toBe("");
   });
 });
 

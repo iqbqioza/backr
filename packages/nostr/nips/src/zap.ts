@@ -63,7 +63,10 @@ export function validateZapReceipt(
   }
   const request = parseZapRequest(receipt);
   if (request === null) {
-    errors.push("missing zap request");
+    // NIP-57 匿名 receipt (description なし) は金額・lnurl 照合を省略する
+    if (receipt.tags.some((t) => t[0] === "description")) {
+      errors.push("missing zap request");
+    }
     return errors;
   }
   const requestAmount = request.tags.find((t) => t[0] === "amount")?.[1];

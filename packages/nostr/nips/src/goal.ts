@@ -7,6 +7,7 @@ export interface Goal9041View {
   description: string;
   summary: string;
   image?: string;
+  relatedUrls: string[];
   goalMsats: bigint;
   closedAt?: number;
   relays: string[];
@@ -96,6 +97,19 @@ export function validateGoal9041(input: unknown): GoalValidation {
     }
   }
 
+  // NIP-75 MAY の関連 URL。http(s) のみ、最大 5 件
+  const relatedUrls: string[] = [];
+  for (const t of tags) {
+    if (t[0] !== "r" || relatedUrls.length >= 5) continue;
+    try {
+      const u = new URL(t[1]);
+      if (u.protocol !== "http:" && u.protocol !== "https:") continue;
+      if (!relatedUrls.includes(t[1])) relatedUrls.push(t[1]);
+    } catch {
+      continue;
+    }
+  }
+
   if (errors.length > 0) return { ok: false, errors };
   return {
     ok: true,
@@ -106,6 +120,7 @@ export function validateGoal9041(input: unknown): GoalValidation {
       description: ev.content,
       summary: firstTag(tags, "summary")?.[1] ?? "",
       image,
+      relatedUrls,
       goalMsats,
       closedAt,
       relays,

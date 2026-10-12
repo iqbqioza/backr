@@ -40,8 +40,7 @@ describe("validateGoal9041", () => {
     });
     expect(result.ok).toBe(true);
   });
-  it("rejects missing amount/relays and bad kind", () => {
-    expect(validateGoal9041({ ...BASE, kind: 1, tags: [] }).ok).toBe(false);
+  it("rejects missing amount/relays and bad kind", () => {    expect(validateGoal9041({ ...BASE, kind: 1, tags: [] }).ok).toBe(false);
     expect(validateGoal9041({ ...BASE, tags: [["amount", "0"]] }).ok).toBe(false);
     expect(validateGoal9041({ ...BASE, tags: [["amount", "10"]] }).ok).toBe(false);
     expect(
@@ -53,6 +52,21 @@ describe("validateGoal9041", () => {
         ],
       }).ok,
     ).toBe(false);
+  });
+  it("collects http(s) r tags, capped and deduped", () => {
+    const result = validateGoal9041({
+      ...BASE,
+      tags: [
+        ["relays", "wss://relay.nostrfy.org"],
+        ["amount", "1000"],
+        ["r", "https://example.com/a"],
+        ["r", "https://example.com/a"],
+        ["r", "ftp://example.com/x"],
+        ["r", "not-a-url"],
+      ],
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.relatedUrls).toEqual(["https://example.com/a"]);
   });
 });
 

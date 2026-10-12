@@ -1,13 +1,27 @@
 import { bolt11TagAmountMsats } from "backr-nostr-utils";
 import { validateZapReceipt, type NostrEventLike } from "backr-nostr-nips";
-import { fetchReceipts, type GoalCardData, type ProfileView } from "./goals";
-import { fetchLnurlPayCached, resolvePayTarget } from "./zap";
+import { fetchReceipts, fetchReceiptsMulti, type GoalCardData, type ProfileView } from "./goals";
+import { fetchLnurlPayCached, resolvePayTarget, type PayTarget } from "./zap";
 
 export interface Supporter {
   pubkey: string;
   msats: bigint;
   comment: string;
   createdAt: number;
+  /** description/P なしの匿名 Zap */
+  anonymous: boolean;
+}
+
+function isAnonymous(receipt: NostrEventLike): boolean {
+  if (receipt.tags.some((t) => t[0] === "P" && t[1].length > 0)) return false;
+  const description = receipt.tags.find((t) => t[0] === "description")?.[1];
+  if (description === undefined) return true;
+  try {
+    const parsed = JSON.parse(description) as { pubkey?: unknown };
+    return typeof parsed.pubkey !== "string" || parsed.pubkey.length === 0;
+  } catch {
+    return true;
+  }
 }
 
 function senderOf(receipt: NostrEventLike): string {
@@ -51,6 +65,7 @@ export function toSupporters(
       msats,
       comment: commentOf(receipt),
       createdAt: receipt.created_at,
+      anonymous: isAnonymous(receipt),
     });
   }
   return out.sort((a, b) => b.createdAt - a.createdAt);
@@ -82,29 +97,25 @@ export interface ValidatedGoalZap {
 
 const UNVERIFIED: ValidatedGoalZap = { totalMsats: 0n, count: 0, supporters: [], verified: false };
 
-/**
- * 検証済み集計: LNURL-pay の nostrPubkey と各 receipt を照合 (NIP-57 Appendix F)。
- * 送金先不明・取得失敗時は未検証 (集計 0) を返す。
- */
-export async function fetchGoalZapData(
-  relayUrl: string,
-  card: GoalCardData,
+async function resolveSigner(
   profile: ProfileView | null,
-): Promise<ValidatedGoalZap> {
+): Promise<{ target: PayTarget; signer: string } | null> {
   const target = resolvePayTarget(profile);
-  if (target === null) return UNVERIFIED;
-  let signer: string;
+  if (target === null) return null;
   try {
-    signer = (await fetchLnurlPayCached(target.payUrl)).nostrPubkey;
+    const signer = (await fetchLnurlPayCached(target.payUrl)).nostrPubkey;
+    return { target, signer };
   } catch {
-    return UNVERIFIED;
+    return null;
   }
-  let receipts: NostrEventLike[];
-  try {
-    receipts = await fetchReceipts(relayUrl, card.id);
-  } catch {
-    return { ...UNVERIFIED, verified: true };
-  }
+}
+
+function tallyValidated(
+  receipts: NostrEventLike[],
+  card: GoalCardData,
+  signer: string,
+  lnurl: string,
+): ValidatedGoalZap {
   const valid = receipts.filter(
     (receipt) =>
       validateZapReceipt(
@@ -113,7 +124,7 @@ export async function fetchGoalZapData(
           goalId: card.id,
           closedAt: card.closedAt,
           expectedSigner: signer,
-          expectedLnurl: target.lnurl,
+          expectedLnurl: lnurl,
         },
         (tags) => bolt11TagAmountMsats(tags),
       ).length === 0,
@@ -125,6 +136,38 @@ export async function fetchGoalZapData(
     supporters,
     verified: true,
   };
+}
+
+/**
+ * 検証済み集計: LNURL-pay の nostrPubkey と各 receipt を照合 (NIP-57 Appendix F)。
+ * 送金先不明・取得失敗時は未検証 (集計 0) を返す。
+ */
+export async function fetchGoalZapData(
+  relayUrl: string,
+  card: GoalCardData,
+  profile: ProfileView | null,
+): Promise<ValidatedGoalZap> {
+  const resolved = await resolveSigner(profile);
+  if (resolved === null) return UNVERIFIED;
+  let receipts: NostrEventLike[];
+  try {
+    receipts = await fetchReceipts(relayUrl, card.id);
+  } catch {
+    return { ...UNVERIFIED, verified: true };
+  }
+  return tallyValidated(receipts, card, resolved.signer, resolved.target.lnurl);
+}
+
+/** 複数リレーの receipt を統合して検証済み集計する */
+export async function fetchGoalZapDataMulti(
+  relayUrls: string[],
+  card: GoalCardData,
+  profile: ProfileView | null,
+): Promise<ValidatedGoalZap> {
+  const resolved = await resolveSigner(profile);
+  if (resolved === null) return UNVERIFIED;
+  const receipts = await fetchReceiptsMulti(relayUrls, card.id);
+  return tallyValidated(receipts, card, resolved.signer, resolved.target.lnurl);
 }
 
 /** 一覧カード分の検証済み集計を一括取得 (失敗分は未検証) */

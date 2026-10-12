@@ -2,6 +2,7 @@ import { encodeNevent } from "backr-nostr-nips";
 import { formatSats, progressPercent, remainingLabel } from "backr-utils";
 import { createSignal, onMount, type JSX } from "solid-js";
 import GoalCard from "../components/GoalCard";
+import SafeImage from "../components/SafeImage";
 import RelayBar from "../components/RelayBar";
 import { EmptyState, ErrorState, Loading } from "../components/States";
 import { DEFAULT_RELAY } from "../lib/const";
@@ -27,6 +28,9 @@ export default function Home() {
   const [zapData, setZapData] = createSignal(new Map<string, ValidatedGoalZap>());
   const [loading, setLoading] = createSignal(true);
   const [error, setError] = createSignal<string | null>(null);
+  const [query, setQuery] = createSignal("");
+  const [sort, setSort] = createSignal<"new" | "top" | "ending">("new");
+  const [visibleCount, setVisibleCount] = createSignal(12);
 
   const load = () => {
     setLoading(true);
@@ -47,10 +51,43 @@ export default function Home() {
       });
   };
 
-  onMount(load);
+  onMount(() => {
+    load();
+    if (typeof document !== "undefined") document.title = "Backr — Nostr crowdfunding";
+  });
 
   const sections = () => pickSections(cards(), zapData());
   const zapOf = (id: string) => zapData().get(id);
+
+  const progressOf = (card: GoalCardData): number => {
+    const zap = zapOf(card.id);
+    const raised = zap?.totalMsats ?? 0n;
+    return card.goalMsats > 0n ? Number(raised) / Number(card.goalMsats) : 0;
+  };
+
+  const allCards = () => {
+    const q = query().trim().toLowerCase();
+    const filtered =
+      q.length === 0
+        ? [...cards()]
+        : cards().filter(
+            (c) =>
+              c.title.toLowerCase().includes(q) ||
+              c.summary.toLowerCase().includes(q) ||
+              c.description.toLowerCase().includes(q),
+          );
+    const mode = sort();
+    filtered.sort((a, b) => {
+      if (mode === "top") return progressOf(b) - progressOf(a);
+      if (mode === "ending") {
+        if (a.closedAt === undefined) return 1;
+        if (b.closedAt === undefined) return -1;
+        return a.closedAt - b.closedAt;
+      }
+      return b.createdAt - a.createdAt;
+    });
+    return filtered;
+  };
 
   const featuredNevent = () => {
     const featured = sections().featured;
@@ -78,19 +115,18 @@ export default function Home() {
             const raised = zap?.totalMsats ?? 0n;
             return (
               <>
-                {featured.image !== undefined ? (
-                  <img
-                    src={featured.image}
-                    alt=""
-                    class={`w-full object-cover md:col-span-3 ${OGP_ASPECT_CLASS}`}
-                  />
-                ) : (
-                  <div
-                    class={`flex w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-7xl md:col-span-3 ${OGP_ASPECT_CLASS}`}
-                  >
-                    ⚡
-                  </div>
-                )}
+                <SafeImage
+                  src={featured.image}
+                  alt=""
+                  imgClass={`w-full object-cover md:col-span-3 ${OGP_ASPECT_CLASS}`}
+                  fallback={
+                    <div
+                      class={`flex w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-7xl md:col-span-3 ${OGP_ASPECT_CLASS}`}
+                    >
+                      ⚡
+                    </div>
+                  }
+                />
                 <div class="p-6 md:col-span-2">
                   <p class="text-xs font-semibold tracking-wider text-amber-300">{HOME.heroTag}</p>
                   <h1 class="mt-2 text-2xl font-bold leading-tight">{featured.title}</h1>
@@ -119,14 +155,18 @@ export default function Home() {
       {!loading() && sections().recommended.length > 0 && (
         <Section title={HOME.recommended} >
           {sections().recommended.map((card) => (
-            <GoalCard card={card} zap={zapOf(card.id)} />
+            <div class="w-64 shrink-0">
+              <GoalCard card={card} zap={zapOf(card.id)} />
+            </div>
           ))}
         </Section>
       )}
       {!loading() && sections().endingSoon.length > 0 && (
         <Section title={HOME.endingSoon} >
           {sections().endingSoon.map((card) => (
-            <GoalCard card={card} zap={zapOf(card.id)} />
+            <div class="w-64 shrink-0">
+              <GoalCard card={card} zap={zapOf(card.id)} />
+            </div>
           ))}
         </Section>
       )}
@@ -135,9 +175,62 @@ export default function Home() {
           <h2 class="mb-3 text-xl font-bold">{HOME.fresh}</h2>
           <div class="flex gap-4 overflow-x-auto pb-2">
             {sections().fresh.map((card) => (
-              <GoalCard card={card} zap={zapOf(card.id)} />
+              <div class="w-64 shrink-0">
+                <GoalCard card={card} zap={zapOf(card.id)} />
+              </div>
             ))}
           </div>
+        </section>
+      )}
+      {!loading() && error() === null && cards().length > 0 && (
+        <section class="mt-10">
+          <h2 class="mb-3 text-xl font-bold">All projects ({allCards().length})</h2>
+          <div class="mb-3 flex flex-wrap gap-2">
+            <input
+              class="min-w-0 flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-100 focus:border-amber-400 focus:outline-none"
+              placeholder="Search projects"
+              value={query()}
+              onInput={(e) => {
+                setQuery(e.currentTarget.value);
+                setVisibleCount(12);
+              }}
+            />
+            <select
+              class="rounded border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-100 focus:border-amber-400 focus:outline-none"
+              value={sort()}
+              onChange={(e) => {
+                setSort(e.currentTarget.value as "new" | "top" | "ending");
+              }}
+            >
+              <option value="new">Newest</option>
+              <option value="top">Top funded</option>
+              <option value="ending">Ending soon</option>
+            </select>
+          </div>
+          {allCards().length === 0 ? (
+            <p class="text-sm text-zinc-400">No projects match "{query().trim()}".</p>
+          ) : (
+            <>
+              <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {allCards()
+                  .slice(0, visibleCount())
+                  .map((card) => (
+                    <GoalCard card={card} zap={zapOf(card.id)} />
+                  ))}
+              </div>
+              {visibleCount() < allCards().length && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVisibleCount(visibleCount() + 12);
+                  }}
+                  class="mt-4 w-full rounded border border-zinc-600 px-4 py-2 text-sm text-zinc-100 hover:border-zinc-300"
+                >
+                  Show more ({allCards().length - visibleCount()} remaining)
+                </button>
+              )}
+            </>
+          )}
         </section>
       )}
     </div>

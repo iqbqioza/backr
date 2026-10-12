@@ -38,6 +38,7 @@ export default function ZapPanel(props: {
   const [qrOpen, setQrOpen] = createSignal(false);
   const [copied, setCopied] = createSignal(false);
   const [shared, setShared] = createSignal(false);
+  const [confirmDiscard, setConfirmDiscard] = createSignal(false);
 
   const selected = () => {
     const parsed = Number(custom().trim());
@@ -118,6 +119,7 @@ export default function ZapPanel(props: {
     setQrOpen(false);
     setCopied(false);
     setShared(false);
+    setConfirmDiscard(false);
   };
 
   const onConfirmPaid = () => {
@@ -206,10 +208,19 @@ export default function ZapPanel(props: {
             {actionButtons()}
             <button
               type="button"
-              onClick={resetInvoice}
+              onClick={() => {
+                if (!confirmDiscard()) {
+                  setConfirmDiscard(true);
+                  return;
+                }
+                resetInvoice();
+              }}
+              onBlur={() => {
+                setConfirmDiscard(false);
+              }}
               class="rounded border border-zinc-700 px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-100"
             >
-              {ZAP.discard}
+              {confirmDiscard() ? "Discard?" : ZAP.discard}
             </button>
           </div>
           <p class="mt-2 text-xs text-zinc-500">

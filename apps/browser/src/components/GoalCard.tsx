@@ -6,6 +6,7 @@ import type { GoalCardData } from "../lib/goals";
 import type { ValidatedGoalZap } from "../lib/supporters";
 import { OGP_ASPECT_CLASS, OGP_PLACEHOLDER_SIZE_CLASS } from "./thumb";
 import ProgressMeter from "./ProgressMeter";
+import SafeImage from "./SafeImage";
 
 /**
  * CAMPFIRE-style card: status, time left and title sit on the thumbnail,
@@ -41,18 +42,21 @@ export default function GoalCard(props: { card: GoalCardData; zap?: ValidatedGoa
   return (
     <a
       href={`/g/${nevent()}`}
-      class="block w-64 shrink-0 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 hover:border-zinc-600"
+      class="block w-full overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 hover:border-zinc-600"
     >
       <div class={`relative ${OGP_ASPECT_CLASS} w-full`}>
-        {props.card.image !== undefined ? (
-          <img src={props.card.image} alt="" class={`${OGP_ASPECT_CLASS} w-full object-cover`} />
-        ) : (
-          <div
-            class={`flex ${OGP_ASPECT_CLASS} w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 ${OGP_PLACEHOLDER_SIZE_CLASS}`}
-          >
-            ⚡
-          </div>
-        )}
+        <SafeImage
+          src={props.card.image}
+          alt=""
+          imgClass={`${OGP_ASPECT_CLASS} w-full object-cover`}
+          fallback={
+            <div
+              class={`flex ${OGP_ASPECT_CLASS} w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 ${OGP_PLACEHOLDER_SIZE_CLASS}`}
+            >
+              ⚡
+            </div>
+          }
+        />
         <div class="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/40 to-transparent" />
         <div class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3">
           <span

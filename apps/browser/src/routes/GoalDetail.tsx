@@ -1,10 +1,11 @@
 import { useParams } from "@solidjs/router";
 import { decodeNevent, encodeNevent } from "backr-nostr-nips";
-import { countdownLabel, formatSats, progressPercent, timeAgo } from "backr-utils";
+import { countdownLabel, formatSats, formatSatsBtc, progressPercent, timeAgo } from "backr-utils";
 import { createEffect, createSignal, onCleanup, onMount } from "solid-js";
 import { OGP_ASPECT_CLASS } from "../components/thumb";
 import CommentSection from "../components/CommentSection";
 import Markdown from "../components/Markdown";
+import SafeImage from "../components/SafeImage";
 import ProgressMeter from "../components/ProgressMeter";
 import ReportForm from "../components/ReportForm";
 import RelayBar from "../components/RelayBar";
@@ -19,10 +20,11 @@ import { DEFAULT_RELAY } from "../lib/const";
 import { ACTIVITY, ZAP } from "../lib/copy";
 import { requestDeletion } from "../lib/deletion";
 import {
+  fetchAuthorReadRelays,
   fetchGoalById,
   fetchProfile,
-  fetchProfiles,
-  fetchReports,
+  fetchProfilesMulti,
+  fetchReportsMulti,
   goalRemaining,
   goalStatus,
   GOAL_STATUS_LABEL,
@@ -33,7 +35,7 @@ import {
 import { buildActivityFeed, recentSupporterCount } from "../lib/activity";
 import type { CommentView } from "../lib/comments";
 import { mergeReports } from "../lib/reports";
-import { fetchGoalZapData, type Supporter } from "../lib/supporters";
+import { fetchGoalZapDataMulti, type Supporter } from "../lib/supporters";
 
 export default function GoalDetail() {
   const params = useParams();
@@ -57,6 +59,14 @@ export default function GoalDetail() {
   const [commentCount, setCommentCount] = createSignal(0);
   const [nowSec, setNowSec] = createSignal(Math.floor(Date.now() / 1000));
   const [zapVisible, setZapVisible] = createSignal(false);
+  const [extraRelays, setExtraRelays] = createSignal<string[]>([]);
+
+  /** 選択リレー + goal の relays タグ + 作成者の NIP-65 read リレー */
+  const zapRelays = (): string[] => {
+    const current = card();
+    if (current === null) return [relay()];
+    return [...new Set([relay(), ...current.relays.slice(0, 3), ...extraRelays()])];
+  };
 
   const load = () => {
     setLoading(true);
@@ -79,11 +89,14 @@ export default function GoalDetail() {
         setCard(found);
         return fetchProfile(url, found.pubkey).then((fetchedProfile) => {
           setProfile(fetchedProfile);
-          return Promise.all([
-            refreshStats(fetchedProfile),
-            fetchReports(url, goalId),
-          ]).then(([, fetchedReports]) => {
-            setReports(fetchedReports);
+          return fetchAuthorReadRelays(url, found.pubkey).then((authorRelays) => {
+            setExtraRelays(authorRelays);
+            return Promise.all([
+              refreshStats(fetchedProfile),
+              fetchReportsMulti(zapRelays(), goalId),
+            ]).then(([, fetchedReports]) => {
+              setReports(fetchedReports);
+            });
           });
         });
       })
@@ -98,16 +111,24 @@ export default function GoalDetail() {
   const refreshStats = (profile: ProfileView | null) => {
     const current = card();
     if (current === null) return Promise.resolve();
-    return fetchGoalZapData(relay(), current, profile).then((data) => {
+    return fetchGoalZapDataMulti(zapRelays(), current, profile).then((data) => {
       setRaised(data.totalMsats);
       setSupporters(data.supporters);
       setVerified(data.verified);
-      return fetchProfiles(
-        relay(),
+      return fetchProfilesMulti(
+        zapRelays(),
         data.supporters.map((s) => s.pubkey),
       );
     }).then(setSupporterProfiles);
   };
+
+  // タイトルをプロジェクト名に連動させる
+  createEffect(() => {
+    const title = card()?.title;
+    if (typeof document !== "undefined") {
+      document.title = title !== undefined ? `${title} — Backr` : "Backr — Nostr crowdfunding";
+    }
+  });
 
   // 支援欄が見えている間は下部固定ボタンを隠す
   createEffect(() => {
@@ -213,15 +234,18 @@ export default function GoalDetail() {
           </div>
           <h1 class="mb-4 break-words text-2xl font-bold leading-tight md:text-3xl">{card()?.title}</h1>
           <div class="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900">
-            {card()?.image !== undefined ? (
-              <img src={card()?.image} alt="" class={`w-full object-cover ${OGP_ASPECT_CLASS}`} />
-            ) : (
-              <div
-                class={`flex w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-7xl ${OGP_ASPECT_CLASS}`}
-              >
-                ⚡
-              </div>
-            )}
+            <SafeImage
+              src={card()?.image}
+              alt=""
+              imgClass={`w-full object-cover ${OGP_ASPECT_CLASS}`}
+              fallback={
+                <div
+                  class={`flex w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 text-7xl ${OGP_ASPECT_CLASS}`}
+                >
+                  ⚡
+                </div>
+              }
+            />
           </div>
           <div class="mt-3 grid gap-8 lg:grid-cols-3">
             <div class="grid content-start gap-8 lg:col-span-2">
@@ -289,15 +313,14 @@ export default function GoalDetail() {
               </div>
               <div classList={{ hidden: tab() !== "owner" }}>
                 <div class="flex items-start gap-4 rounded-lg border border-zinc-800 bg-zinc-900 p-5">
-                  {profile()?.image !== undefined ? (
-                    <img
-                      src={profile()?.image}
-                      alt=""
-                      class="h-20 w-20 shrink-0 rounded-full object-cover"
-                    />
-                  ) : (
-                    <span class="h-20 w-20 shrink-0 rounded-full bg-gradient-to-br from-zinc-500 to-zinc-700" />
-                  )}
+                  <SafeImage
+                    src={profile()?.image}
+                    alt=""
+                    imgClass="h-20 w-20 shrink-0 rounded-full object-cover"
+                    fallback={
+                      <span class="h-20 w-20 shrink-0 rounded-full bg-gradient-to-br from-zinc-500 to-zinc-700" />
+                    }
+                  />
                   <div class="min-w-0">
                     <p class="text-xl font-bold">{profile()?.name ?? "Loading…"}</p>
                     {profile()?.about !== undefined && (
@@ -328,10 +351,12 @@ export default function GoalDetail() {
                   <ProgressMeter raisedMsats={raised()} goalMsats={card()?.goalMsats ?? 0n} compact />
                 </div>
                 <p class="mt-2 text-lg font-semibold">{formatSats(raised())}</p>
-                <p class="text-sm text-zinc-400">Goal {formatSats(card()?.goalMsats ?? 0n)}</p>
+                <p class="text-sm text-zinc-400">
+                  Goal {formatSats(card()?.goalMsats ?? 0n)} (≈ {formatSatsBtc(card()?.goalMsats ?? 0n)})
+                </p>
                 {remaining() > 0n && (
                   <p class="mt-1 text-sm font-semibold text-amber-300">
-                    Remaining: {formatSats(remaining())} sats to goal
+                    Remaining: {formatSats(remaining())} to goal
                   </p>
                 )}
                 <div class="mt-3 flex justify-between border-t border-zinc-800 pt-3 text-sm">
@@ -362,28 +387,36 @@ export default function GoalDetail() {
                   }}
                 />
               </div>
-              <div class="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+              <div class="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
                 <div class="flex -space-x-2">
-                  {supporters().slice(0, 5).map((s) =>
-                    avatarImage(supporterProfiles(), s.pubkey) !== undefined ? (
-                      <img
-                        src={avatarImage(supporterProfiles(), s.pubkey)}
-                        alt=""
-                        class="h-8 w-8 rounded-full border-2 border-zinc-900 object-cover"
-                      />
-                    ) : (
-                      <span class="h-8 w-8 rounded-full border-2 border-zinc-900 bg-gradient-to-br from-amber-400 to-orange-600" />
-                    ),
+                  {supporters().slice(0, 5).map((s) => (
+                    <SafeImage
+                      src={avatarImage(supporterProfiles(), s.pubkey)}
+                      alt=""
+                      imgClass="h-8 w-8 rounded-full border-2 border-zinc-900 object-cover"
+                      fallback={
+                        <span class="h-8 w-8 rounded-full border-2 border-zinc-900 bg-gradient-to-br from-amber-400 to-orange-600" />
+                      }
+                    />
+                  ))}
+                  {supporters().length > 5 && (
+                    <span class="flex h-8 w-8 items-center justify-center rounded-full border-2 border-zinc-900 bg-zinc-700 text-[10px] font-semibold text-zinc-200">
+                      +{supporters().length - 5}
+                    </span>
                   )}
                 </div>
-                <p class="text-sm text-zinc-300">
-                  {supporters().length > 0
-                    ? `${supporters().length} supporters`
-                    : "Be the first backer"}
+                <p class="mt-2 text-sm text-zinc-300">
+                  {supporters().length === 0
+                    ? "Be the first backer"
+                    : supporters().length === 1
+                      ? "1 backer"
+                      : `${supporters().length} backers`}
                 </p>
                 {recentCount() > 0 && (
-                  <p class="mt-1 text-xs font-semibold text-amber-300">
-                    In the last 24 hours{recentCount()} supporters!
+                  <p class="mt-2 text-xs font-semibold text-amber-300">
+                    {recentCount() === 1
+                      ? "1 backer in the last 24h!"
+                      : `${recentCount()} backers in the last 24h!`}
                   </p>
                 )}
               </div>
@@ -392,22 +425,24 @@ export default function GoalDetail() {
                   <h2 class="mb-2 font-semibold">Recent activity</h2>
                   <ul class="grid gap-2">
                     {feed().map((item) => (
-                      <li class="flex items-center gap-2 text-sm">
-                        <span
-                          class={`shrink-0 rounded px-1.5 py-0.5 text-xs ${
-                            item.kind === "zap"
-                              ? "bg-amber-400/20 text-amber-300"
-                              : item.kind === "comment"
-                                ? "bg-zinc-700 text-zinc-300"
-                                : "bg-green-900 text-green-200"
-                          }`}
-                        >
-                          {item.kind === "zap" ? ACTIVITY.zap : item.kind === "comment" ? ACTIVITY.comment : ACTIVITY.report}
-                        </span>
-                        <span class="truncate text-zinc-300">{item.text}</span>
-                        <span class="ml-auto shrink-0 text-xs text-zinc-500">
-                          {timeAgo(Math.floor(Date.now() / 1000), item.at)}
-                        </span>
+                      <li class="grid gap-1 text-sm">
+                        <div class="flex items-center gap-2">
+                          <span
+                            class={`shrink-0 rounded px-1.5 py-0.5 text-xs ${
+                              item.kind === "zap"
+                                ? "bg-amber-400/20 text-amber-300"
+                                : item.kind === "comment"
+                                  ? "bg-zinc-700 text-zinc-300"
+                                  : "bg-green-900 text-green-200"
+                            }`}
+                          >
+                            {item.kind === "zap" ? ACTIVITY.zap : item.kind === "comment" ? ACTIVITY.comment : ACTIVITY.report}
+                          </span>
+                          <span class="ml-auto shrink-0 text-xs text-zinc-500">
+                            {timeAgo(Math.floor(Date.now() / 1000), item.at)}
+                          </span>
+                        </div>
+                        <p class="break-words text-zinc-300">{item.text}</p>
                       </li>
                     ))}
                   </ul>

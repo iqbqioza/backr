@@ -1,5 +1,6 @@
 import {
   goalTitle,
+  parseRelayList,
   validateGoal9041,
   type Goal9041View,
   type NostrEventLike,
@@ -42,11 +43,32 @@ export async function fetchReceipts(relayUrl: string, goalId: string): Promise<N
   );
 }
 
+/** 複数リレーから receipt を集めて id で重複排除 */
+export async function fetchReceiptsMulti(
+  relayUrls: string[],
+  goalId: string,
+): Promise<NostrEventLike[]> {
+  const settled = await Promise.allSettled(relayUrls.map((url) => fetchReceipts(url, goalId)));
+  const seen = new Set<string>();
+  const out: NostrEventLike[] = [];
+  for (const s of settled) {
+    if (s.status !== "fulfilled") continue;
+    for (const ev of s.value) {
+      if (!seen.has(ev.id)) {
+        seen.add(ev.id);
+        out.push(ev);
+      }
+    }
+  }
+  return out;
+}
+
 export interface ReportData {
   id: string;
   author: string;
   identifier: string;
   title: string;
+  summary?: string;
   createdAt: number;
   content: string;
   image?: string;
@@ -67,6 +89,8 @@ export function toReportData(ev: NostrEventLike, goalId: string): ReportData | n
     createdAt: ev.created_at,
     content: ev.content,
   };
+  const summary = ev.tags.find((t) => t[0] === "summary")?.[1];
+  if (summary !== undefined && summary.length > 0) report.summary = summary;
   const image = ev.tags.find((t) => t[0] === "image")?.[1];
   if (image !== undefined && image.length > 0) report.image = image;
   return report;
@@ -87,13 +111,29 @@ export function dedupeReports(reports: ReportData[]): ReportData[] {
 
 /** 活動報告: kind:30023 のうち goal タグが goalId のもの (編集は最新のみ) */
 export async function fetchReports(relayUrl: string, goalId: string): Promise<ReportData[]> {
-  const events = await fetchEvents([{ kinds: [30023], limit: 50 }], relayUrl);
+  const events = await fetchEvents(
+    [{ kinds: [30023], "#goal": [goalId], limit: 50 }],
+    relayUrl,
+  );
   const reports: ReportData[] = [];
   for (const ev of events) {
     const report = toReportData(ev, goalId);
     if (report !== null) reports.push(report);
   }
   return dedupeReports(reports);
+}
+
+/** 複数リレーから報告を集めて統合 (同一 author/d は最新のみ) */
+export async function fetchReportsMulti(
+  relayUrls: string[],
+  goalId: string,
+): Promise<ReportData[]> {
+  const settled = await Promise.allSettled(relayUrls.map((url) => fetchReports(url, goalId)));
+  const all: ReportData[] = [];
+  for (const s of settled) {
+    if (s.status === "fulfilled") all.push(...s.value);
+  }
+  return dedupeReports(all);
 }
 
 export interface ProfileView {
@@ -158,6 +198,34 @@ export async function fetchProfiles(
   if (unique.length === 0) return new Map();
   const events = await fetchEvents([{ kinds: [0], authors: unique, limit: unique.length }], relayUrl);
   return profilesByKey(events);
+}
+
+/** 複数リレーからプロフィールを集めて統合 (先勝ち) */
+export async function fetchProfilesMulti(
+  relayUrls: string[],
+  pubkeys: string[],
+): Promise<Map<string, ProfileView>> {
+  const settled = await Promise.allSettled(relayUrls.map((url) => fetchProfiles(url, pubkeys)));
+  const merged = new Map<string, ProfileView>();
+  for (const s of settled) {
+    if (s.status !== "fulfilled") continue;
+    for (const [key, value] of s.value) {
+      if (!merged.has(key)) merged.set(key, value);
+    }
+  }
+  return merged;
+}
+
+/** 作成者の NIP-65 read リレー (最大3件)。取得失敗時は空 */
+export async function fetchAuthorReadRelays(relayUrl: string, pubkey: string): Promise<string[]> {
+  try {
+    const events = await fetchEvents([{ kinds: [10002], authors: [pubkey], limit: 1 }], relayUrl);
+    const found = events.find((ev) => ev.kind === 10002 && ev.pubkey === pubkey);
+    if (found === undefined) return [];
+    return (parseRelayList(found)?.read ?? []).slice(0, 3);
+  } catch {
+    return [];
+  }
 }
 
 export type GoalStatus = "achieved" | "ended" | "ending-soon" | "active";

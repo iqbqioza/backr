@@ -17,6 +17,16 @@ export function formatSats(msats: bigint): string {
   return `${msatsToSatsString(msats)} sats`;
 }
 
+/** sats 相当の BTC 表示 (例: 100000000n -> "1 BTC")。msats 端数は切り捨て */
+export function formatSatsBtc(msats: bigint): string {
+  const sats = msats / MSATS_PER_SAT;
+  const intPart = sats / 100000000n;
+  const fracPart = sats % 100000000n;
+  if (fracPart === 0n) return `${intPart.toString()} BTC`;
+  const fracStr = fracPart.toString().padStart(8, "0").replace(/0+$/, "");
+  return `${intPart.toString()}.${fracStr} BTC`;
+}
+
 /**
  * 達成率 (percent)。goal <= 0 のとき 0。100 超え (超過達成) はそのまま返す。
  * 小数第1位に丸める。

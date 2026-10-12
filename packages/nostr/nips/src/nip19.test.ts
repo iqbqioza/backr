@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   bech32Decode,
   decodeBare,
+  decodeNaddr,
   decodeNevent,
   decodeNprofile,
   encodeBare,
+  encodeNaddr,
   encodeNevent,
 } from "./nip19";
 
@@ -76,5 +78,31 @@ describe("nevent", () => {
   it("rejects missing id", () => {
     expect(decodeNevent("nevent1qqsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq")).toBeNull();
     expect(encodeNevent({ id: "zz" })).toBeNull();
+  });
+});
+
+describe("naddr", () => {
+  const author = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+  it("roundtrips identifier/author/kind/relays", () => {
+    const encoded = encodeNaddr({
+      identifier: "backr-1",
+      author,
+      kind: 30023,
+      relays: ["wss://relay.nostrfy.org"],
+    });
+    expect(encoded).not.toBeNull();
+    expect(encoded?.startsWith("naddr1")).toBe(true);
+    expect(decodeNaddr(encoded ?? "")).toEqual({
+      identifier: "backr-1",
+      author,
+      kind: 30023,
+      relays: ["wss://relay.nostrfy.org"],
+    });
+  });
+  it("rejects bad identifier/author/kind", () => {
+    expect(encodeNaddr({ identifier: "", author, kind: 30023 })).toBeNull();
+    expect(encodeNaddr({ identifier: "x", author: "zz", kind: 30023 })).toBeNull();
+    expect(encodeNaddr({ identifier: "x", author, kind: -1 })).toBeNull();
+    expect(decodeNaddr("naddr1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq")).toBeNull();
   });
 });

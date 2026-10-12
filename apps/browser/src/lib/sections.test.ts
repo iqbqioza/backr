@@ -14,6 +14,7 @@ function card(id: string, createdAt: number, closedAt?: number): GoalCardData {
     goalMsats: 1000n,
     closedAt,
     relays: [],
+    relatedUrls: [],
   };
 }
 

@@ -74,6 +74,43 @@ describe("validateZapReceipt", () => {
     expect(receipt).not.toBeNull();
     expect(validateZapReceipt(receipt ?? ({} as NostrEventLike), ctx, amountOf)).toEqual([]);
   });
+  it("accepts anonymous receipts without description", () => {
+    const signed = signEvent(
+      {
+        pubkey: signer,
+        created_at: 100,
+        kind: 9735,
+        tags: [
+          ["e", goal],
+          ["bolt11", INVOICE],
+        ],
+        content: "",
+      },
+      SIGNER_SECRET,
+    );
+    expect(signed).not.toBeNull();
+    if (signed === null) throw new Error("unreachable");
+    expect(validateZapReceipt(signed, ctx, amountOf)).toEqual([]);
+  });
+  it("rejects broken descriptions", () => {
+    const signed = signEvent(
+      {
+        pubkey: signer,
+        created_at: 100,
+        kind: 9735,
+        tags: [
+          ["e", goal],
+          ["bolt11", INVOICE],
+          ["description", "not-json"],
+        ],
+        content: "",
+      },
+      SIGNER_SECRET,
+    );
+    expect(signed).not.toBeNull();
+    if (signed === null) throw new Error("unreachable");
+    expect(validateZapReceipt(signed, ctx, amountOf)).toContain("missing zap request");
+  });
   it("rejects wrong signer, tampered amount, late and bad sig", () => {
     const receipt = validReceipt();
     if (receipt === null) throw new Error("unreachable");

@@ -12,6 +12,7 @@ import {
 import { requestDeletion } from "../lib/deletion";
 import { fetchProfiles, type ProfileView } from "../lib/goals";
 import { avatarImage, displayName } from "./people";
+import SafeImage from "./SafeImage";
 
 function CommentRow(props: {
   node: ThreadNode;
@@ -50,15 +51,14 @@ function CommentRow(props: {
         ) : (
           <span class="h-6 w-6 shrink-0 text-center font-mono text-sm text-zinc-700">•</span>
         )}
-        {avatarImage(props.profiles, comment().pubkey) !== undefined ? (
-          <img
-            src={avatarImage(props.profiles, comment().pubkey)}
-            alt=""
-            class="h-6 w-6 shrink-0 rounded-full object-cover"
-          />
-        ) : (
-          <span class="h-6 w-6 shrink-0 rounded-full bg-gradient-to-br from-zinc-500 to-zinc-700" />
-        )}
+        <SafeImage
+          src={avatarImage(props.profiles, comment().pubkey)}
+          alt=""
+          imgClass="h-6 w-6 shrink-0 rounded-full object-cover"
+          fallback={
+            <span class="h-6 w-6 shrink-0 rounded-full bg-gradient-to-br from-zinc-500 to-zinc-700" />
+          }
+        />
         <p class="truncate text-sm font-medium">{displayName(props.profiles, comment().pubkey)}</p>
         {props.node.depth > 1 && (
           <span class="rounded bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-400">

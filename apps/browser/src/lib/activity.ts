@@ -14,6 +14,13 @@ export interface ActivityItem {
  * 支援・コメント・報告を混ぜた新着アクティビティ (純粋関数)。
  * 新しい順・上限付き。
  */
+export function excerpt(content: string, maxLength = 60): string {
+  const first = content.split("\n")[0] ?? "";
+  const trimmed = first.trim();
+  if (trimmed.length === 0) return "";
+  return trimmed.length > maxLength ? `${trimmed.slice(0, maxLength)}…` : trimmed;
+}
+
 export function buildActivityFeed(
   supporters: Supporter[],
   comments: CommentView[],
@@ -27,12 +34,15 @@ export function buildActivityFeed(
       pubkey: s.pubkey,
       text: `Zapped ${formatSats(s.msats)}`,
     })),
-    ...comments.map((c): ActivityItem => ({
-      kind: "comment",
-      at: c.createdAt,
-      pubkey: c.pubkey,
-      text: "Commented",
-    })),
+    ...comments.map((c): ActivityItem => {
+      const preview = excerpt(c.content);
+      return {
+        kind: "comment",
+        at: c.createdAt,
+        pubkey: c.pubkey,
+        text: preview.length > 0 ? `Commented "${preview}"` : "Commented",
+      };
+    }),
     ...reports.map((r): ActivityItem => ({
       kind: "report",
       at: r.createdAt,

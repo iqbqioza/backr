@@ -1,15 +1,18 @@
 import {
   decodeBare,
   encodeNevent,
+  goalTitle,
   validateGoal9041,
   type UnsignedEvent,
 } from "backr-nostr-nips";
-import { formatSats, remainingLabel } from "backr-utils";
-import { createSignal } from "solid-js";
+import { countdownLabel, formatSats } from "backr-utils";
+import { createSignal, onMount } from "solid-js";
 import { canSign, getSession, signWithSession } from "../lib/auth";
 import { OGP_ASPECT_CLASS } from "../components/thumb";
 import { CREATE } from "../lib/copy";
 import Markdown from "../components/Markdown";
+import RelayBar from "../components/RelayBar";
+import SafeImage from "../components/SafeImage";
 import { DEFAULT_RELAY } from "../lib/const";
 import { publishEvent } from "../lib/relay";
 import { shortKey } from "../components/people";
@@ -21,6 +24,8 @@ export default function Create() {
   const [goalSats, setGoalSats] = createSignal("");
   const [closedAt, setClosedAt] = createSignal("");
   const [image, setImage] = createSignal("");
+  const [relatedUrl, setRelatedUrl] = createSignal("");
+  const [relay, setRelay] = createSignal(DEFAULT_RELAY);
   const [unsigned, setUnsigned] = createSignal<UnsignedEvent | null>(null);
   const [preview, setPreview] = createSignal<string | null>(null);
   const [errors, setErrors] = createSignal<string[]>([]);
@@ -61,8 +66,9 @@ export default function Create() {
       setErrors(problems);
       return null;
     }
+    const relayUrl = relay().trim().length > 0 ? relay().trim() : DEFAULT_RELAY;
     const tags: string[][] = [
-      ["relays", DEFAULT_RELAY],
+      ["relays", relayUrl],
       ["amount", (amount ?? 0n).toString()],
       ["t", "backr"],
     ];
@@ -70,6 +76,7 @@ export default function Create() {
     if (closed !== null) tags.push(["closed_at", String(closed)]);
     if (summary().trim().length > 0) tags.push(["summary", summary().trim()]);
     if (image().trim().length > 0) tags.push(["image", image().trim()]);
+    if (relatedUrl().trim().length > 0) tags.push(["r", relatedUrl().trim()]);
     return {
       pubkey: pubkey ?? "",
       created_at: Math.floor(Date.now() / 1000),
@@ -110,12 +117,13 @@ export default function Create() {
           setErrors([CREATE.errors.noSignature]);
           return;
         }
-        return publishEvent(DEFAULT_RELAY, signed).then((result) => {
+        return publishEvent(relay().trim().length > 0 ? relay().trim() : DEFAULT_RELAY, signed).then((result) => {
           if (!result.accepted) {
             setErrors([CREATE.errors.rejected(result.message)]);
             return;
           }
-          const nevent = encodeNevent({ id: signed.id, relays: [DEFAULT_RELAY] });
+          const target = relay().trim().length > 0 ? relay().trim() : DEFAULT_RELAY;
+          const nevent = encodeNevent({ id: signed.id, relays: [target] });
           setPublished(nevent);
         });
       })
@@ -132,9 +140,14 @@ export default function Create() {
   const nowSec = () => Math.floor(Date.now() / 1000);
   const session = () => getSession();
 
+  onMount(() => {
+    if (typeof document !== "undefined") document.title = "Start a project — Backr";
+  });
+
   return (
     <div>
       <h1 class="mb-4 text-2xl font-bold">{CREATE.title}</h1>
+      <RelayBar relay={relay()} onChange={setRelay} />
       {session() === null && (
         <p class="mb-4 rounded border border-zinc-700 p-3 text-sm text-zinc-300">
           {CREATE.loginNotice}
@@ -199,7 +212,7 @@ export default function Create() {
               Deadline (optional)
               <input
                 class={input}
-                type="date"
+                type="datetime-local"
                 value={closedAt()}
                 onInput={(e) => {
                   setClosedAt(e.currentTarget.value);
@@ -215,6 +228,17 @@ export default function Create() {
               value={image()}
               onInput={(e) => {
                 setImage(e.currentTarget.value);
+              }}
+            />
+          </label>
+          <label class="grid gap-1 text-sm">
+            Related URL (optional)
+            <input
+              class={input}
+              placeholder="https://…"
+              value={relatedUrl()}
+              onInput={(e) => {
+                setRelatedUrl(e.currentTarget.value);
               }}
             />
           </label>
@@ -237,7 +261,18 @@ export default function Create() {
           <h2 class="mb-2 font-semibold">Preview</h2>
           <div class="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
             {image().trim().length > 0 ? (
-              <img src={image().trim()} alt="" class={`mb-3 w-full rounded object-cover ${OGP_ASPECT_CLASS}`} />
+              <SafeImage
+                src={image().trim()}
+                alt=""
+                imgClass={`mb-3 w-full rounded object-cover ${OGP_ASPECT_CLASS}`}
+                fallback={
+                  <div
+                    class={`mb-3 flex w-full items-center justify-center rounded bg-gradient-to-br from-zinc-800 to-zinc-900 text-4xl ${OGP_ASPECT_CLASS}`}
+                  >
+                    ⚡
+                  </div>
+                }
+              />
             ) : (
               <div
                 class={`mb-3 flex w-full items-center justify-center rounded bg-gradient-to-br from-zinc-800 to-zinc-900 text-4xl ${OGP_ASPECT_CLASS}`}
@@ -245,7 +280,9 @@ export default function Create() {
                 ⚡
               </div>
             )}
-            <p class="text-lg font-semibold">{summary().trim() || "Untitled"}</p>
+            <p class="text-lg font-semibold">
+              {goalTitle({ summary: summary(), description: description() })}
+            </p>
             {description().trim().length > 0 ? (
               <div class="mt-1 line-clamp-3 text-sm text-zinc-400 [&_a]:text-amber-300 [&_h1]:font-bold [&_h1]:text-base [&_li]:list-disc [&_li]:ml-5 [&_p]:my-1">
                 <Markdown source={description()} />
@@ -256,7 +293,7 @@ export default function Create() {
             <p class="mt-3 text-sm text-zinc-400">
               Goal: {goalMsats() === null ? "—" : formatSats(goalMsats() ?? 0n)}
               {" / "}
-              {closedAtSec() === null ? "No deadline" : remainingLabel(nowSec(), closedAtSec() ?? 0)}
+              {closedAtSec() === null ? "No deadline" : countdownLabel(nowSec(), closedAtSec() ?? 0)}
             </p>
           </div>
           {preview() !== null && (
@@ -269,7 +306,7 @@ export default function Create() {
               disabled={publishing()}
               class="mt-3 w-full rounded bg-amber-400 px-4 py-2 font-semibold text-zinc-950 disabled:opacity-50"
             >
-              {publishing() ? "Publishing…" : `${CREATE.publish(DEFAULT_RELAY)}`}
+              {publishing() ? "Publishing…" : `${CREATE.publish(relay().trim().length > 0 ? relay().trim() : DEFAULT_RELAY)}`}
             </button>
           )}
           {published() !== null && (

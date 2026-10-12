@@ -1,20 +1,22 @@
 import { formatSats } from "backr-utils";
+import { Show } from "solid-js";
 import type { ProfileView } from "../lib/goals";
 import { firstSupporter, topSupporters, type Supporter } from "../lib/supporters";
 import { displayName, shortKey } from "./people";
+import SafeImage from "./SafeImage";
 
 /** Supporter tab header: first supporter and top backers */
 export default function SupporterHighlights(props: {
   supporters: Supporter[];
   profiles: Map<string, ProfileView>;
 }) {
-  const list = props.supporters;
-  const first = () => firstSupporter(list);
-  const top = () => topSupporters(list, 3);
-  if (list.length === 0) return null;
+  // NOTE: read props.supporters inside reactive contexts so late arrivals re-render.
+  const first = () => firstSupporter(props.supporters);
+  const top = () => topSupporters(props.supporters, 3);
 
   return (
-    <div class="mb-4 grid gap-3 sm:grid-cols-2">
+    <Show when={props.supporters.length > 0}>
+      <div class="mb-4 grid gap-3 sm:grid-cols-2">
       {first() !== null && (
         <div class="rounded-lg border border-amber-600/50 bg-amber-400/10 p-4">
           <p class="text-xs font-semibold tracking-wider text-amber-300">First backer</p>
@@ -22,14 +24,23 @@ export default function SupporterHighlights(props: {
             {(() => {
               const s = first();
               const image = s === null ? undefined : props.profiles.get(s.pubkey)?.image;
-              return image !== undefined ? (
-                <img src={image} alt="" class="h-8 w-8 rounded-full object-cover" />
-              ) : (
-                <span class="h-8 w-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-600" />
+              return (
+                <SafeImage
+                  src={image}
+                  alt=""
+                  imgClass="h-8 w-8 rounded-full object-cover"
+                  fallback={
+                    <span class="h-8 w-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-600" />
+                  }
+                />
               );
             })()}
             <div class="min-w-0">
-              <p class="truncate font-medium">{displayName(props.profiles, first()?.pubkey ?? "")}</p>
+              <p class="truncate font-medium">
+                {(first()?.anonymous ?? false)
+                  ? "Anonymous"
+                  : displayName(props.profiles, first()?.pubkey ?? "")}
+              </p>
               <p class="font-mono text-xs text-zinc-500">{shortKey(first()?.pubkey ?? "")}</p>
             </div>
             <span class="ml-auto shrink-0 text-sm font-semibold text-amber-300">
@@ -55,7 +66,9 @@ export default function SupporterHighlights(props: {
                 >
                   {index + 1}
                 </span>
-                <span class="truncate">{displayName(props.profiles, supporter.pubkey)}</span>
+                <span class="truncate">
+                  {supporter.anonymous ? "Anonymous" : displayName(props.profiles, supporter.pubkey)}
+                </span>
                 <span class="ml-auto shrink-0 font-mono text-xs text-zinc-500">
                   {formatSats(supporter.msats)}
                 </span>
@@ -64,6 +77,7 @@ export default function SupporterHighlights(props: {
           </ol>
         </div>
       )}
-    </div>
+      </div>
+    </Show>
   );
 }

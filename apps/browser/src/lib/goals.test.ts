@@ -65,6 +65,20 @@ describe("toReportData", () => {
     expect(toReportData({ ...ev, kind: 1 }, goalId)).toBeNull();
     expect(toReportData({ ...ev, tags: [["title", "x"]] }, goalId)).toBeNull();
   });
+  it("reads optional summary and image tags", () => {
+    const withMeta = {
+      ...ev,
+      tags: [
+        ...ev.tags,
+        ["summary", "概要"],
+        ["image", "https://example.com/a.png"],
+      ],
+    };
+    expect(toReportData(withMeta, goalId)).toMatchObject({
+      summary: "概要",
+      image: "https://example.com/a.png",
+    });
+  });
 });
 
 describe("goalStatus", () => {

@@ -226,3 +226,84 @@ export function decodeNprofile(bech: string): NprofileData | null {
   if (tlv === null || tlv.id === undefined || tlv.id.length !== 32) return null;
   return { pubkey: bytesToHex(tlv.id), relays: tlv.relays };
 }
+
+export interface NaddrData {
+  identifier: string;
+  author: string;
+  kind: number;
+  relays: string[];
+}
+
+/** NIP-19 naddr (addressable イベント共有)。type 0 は UTF-8 識別子 */
+export function decodeNaddr(bech: string): NaddrData | null {
+  const dec = bech32Decode(bech);
+  if (dec === null || dec.prefix !== "naddr") return null;
+  const bytes = wordsToBytes(dec.words);
+  if (bytes === null) return null;
+  const decoder = new TextDecoder();
+  let identifier: string | null = null;
+  let author: string | null = null;
+  let kind: number | null = null;
+  const relays: string[] = [];
+  let i = 0;
+  while (i + 2 <= bytes.length) {
+    const t = bytes[i];
+    const len = bytes[i + 1];
+    if (i + 2 + len > bytes.length) return null;
+    const value = bytes.slice(i + 2, i + 2 + len);
+    if (t === 0 && identifier === null) {
+      try {
+        identifier = decoder.decode(value);
+      } catch {
+        return null;
+      }
+      if (identifier.length === 0) return null;
+    } else if (t === 1) {
+      const relay = decoder.decode(value);
+      if (relay.length > 0) relays.push(relay);
+    } else if (t === 2 && author === null) {
+      if (value.length !== 32) return null;
+      author = bytesToHex(value);
+    } else if (t === 3 && kind === null) {
+      if (value.length !== 4) return null;
+      kind = value[0] * 16777216 + value[1] * 65536 + value[2] * 256 + value[3];
+    }
+    // 未知の TLV は無視する
+    i += 2 + len;
+  }
+  if (identifier === null || author === null || kind === null) return null;
+  return { identifier, author, kind, relays };
+}
+
+/** NIP-19 naddr エンコード */
+export function encodeNaddr(data: {
+  identifier: string;
+  author: string;
+  kind: number;
+  relays?: string[];
+}): string | null {
+  const encoder = new TextEncoder();
+  const idBytes = encoder.encode(data.identifier);
+  if (idBytes.length === 0 || idBytes.length > 255) return null;
+  const authorBytes = hexToBytes(data.author);
+  if (authorBytes === null || authorBytes.length !== 32) return null;
+  if (!Number.isInteger(data.kind) || data.kind < 0 || data.kind > 4294967295) return null;
+  const parts: number[] = [0, idBytes.length, ...idBytes];
+  for (const relay of data.relays ?? []) {
+    const bytes = encoder.encode(relay);
+    if (bytes.length === 0 || bytes.length > 255) return null;
+    parts.push(1, bytes.length, ...bytes);
+  }
+  parts.push(2, 32, ...authorBytes);
+  parts.push(
+    3,
+    4,
+    Math.floor(data.kind / 16777216) % 256,
+    Math.floor(data.kind / 65536) % 256,
+    Math.floor(data.kind / 256) % 256,
+    data.kind % 256,
+  );
+  const words = convertBits(parts, 8, 5, true);
+  if (words === null) return null;
+  return bech32Encode("naddr", words);
+}
