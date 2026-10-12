@@ -2,6 +2,7 @@ import { createSignal } from "solid-js";
 import { formatSats } from "backr-utils";
 import { canSign } from "../lib/auth";
 import { DEFAULT_RELAY } from "../lib/const";
+import { ZAP } from "../lib/copy";
 import type { ProfileView } from "../lib/goals";
 import {
   checkAmountRange,
@@ -11,6 +12,7 @@ import {
   resolvePayTargetFromLud06,
   signZapRequest,
 } from "../lib/zap";
+import InvoiceQrModal from "./InvoiceQrModal";
 
 const PRESETS = [21, 210, 2100, 21000];
 
@@ -33,6 +35,7 @@ export default function ZapPanel(props: {
   const [step, setStep] = createSignal("");
   const [error, setError] = createSignal<string | null>(null);
   const [invoice, setInvoice] = createSignal<string | null>(null);
+  const [qrOpen, setQrOpen] = createSignal(false);
   const [copied, setCopied] = createSignal(false);
   const [shared, setShared] = createSignal(false);
 
@@ -41,6 +44,8 @@ export default function ZapPanel(props: {
     if (custom().trim().length > 0 && Number.isInteger(parsed) && parsed > 0) return parsed;
     return sats();
   };
+
+  const amountLabel = () => formatSats(BigInt(selected()) * 1000n);
 
   const onProceed = () => {
     if (!canSign()) {
@@ -79,7 +84,10 @@ export default function ZapPanel(props: {
       })
       .then((pr) => {
         setInvoice(pr);
+        setCopied(false);
+        setShared(false);
         setPhase("invoice");
+        setQrOpen(true);
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : "Payment failed");
@@ -104,12 +112,17 @@ export default function ZapPanel(props: {
       });
   };
 
-  const onConfirmPaid = () => {
-    props.onPaid();
+  const resetInvoice = () => {
     setPhase("idle");
     setInvoice(null);
+    setQrOpen(false);
     setCopied(false);
     setShared(false);
+  };
+
+  const onConfirmPaid = () => {
+    props.onPaid();
+    resetInvoice();
   };
 
   const onShare = () => {
@@ -118,7 +131,7 @@ export default function ZapPanel(props: {
       return;
     }
     const url = typeof window !== "undefined" ? window.location.href : "";
-    const text = `『${props.goalTitle}』に${formatSats(BigInt(selected()) * 1000n)}支援しました！ ${url}`;
+    const text = `I supported "${props.goalTitle}" with ${amountLabel()}! ${url}`;
     navigator.clipboard
       .writeText(text)
       .then(() => {
@@ -129,43 +142,74 @@ export default function ZapPanel(props: {
       });
   };
 
+  const actionButtons = () => (
+    <>
+      <button
+        type="button"
+        onClick={onCopy}
+        class="rounded border border-zinc-600 px-3 py-1.5 text-sm text-zinc-100 hover:border-zinc-300"
+      >
+        {copied() ? "Copied" : "Copy invoice"}
+      </button>
+      <button
+        type="button"
+        onClick={onShare}
+        class="rounded border border-zinc-600 px-3 py-1.5 text-sm text-zinc-100 hover:border-zinc-300"
+      >
+        {shared() ? "Share text copied" : "Share your support"}
+      </button>
+      <button
+        type="button"
+        onClick={onConfirmPaid}
+        class="rounded bg-amber-400 px-3 py-1.5 text-sm font-semibold text-zinc-950"
+      >
+        Confirm payment (update tally)
+      </button>
+    </>
+  );
+
   return (
     <section class="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-      <h2 class="font-semibold">Support this project</h2>
+      <h2 class="font-semibold text-zinc-100">Support this project</h2>
       {props.ended ? (
         <p class="mt-2 text-sm text-zinc-400">
           Funding closed. Zaps after tally are not counted.
         </p>
       ) : phase() === "invoice" && invoice() !== null ? (
         <div>
+          {qrOpen() && (
+            <InvoiceQrModal
+              invoice={invoice() ?? ""}
+              heading={`${amountLabel()} invoice issued.`}
+              scanNote={ZAP.scanNote}
+              closeLabel={ZAP.close}
+              onClose={() => {
+                setQrOpen(false);
+              }}
+            >
+              {actionButtons()}
+            </InvoiceQrModal>
+          )}
           <p class="mt-2 text-sm text-zinc-300">
-            {formatSats(BigInt(selected()) * 1000n)} invoice issued. 
-            Please pay with your wallet.
-          </p>
-          <p class="mt-2 break-all rounded bg-zinc-950 p-3 font-mono text-xs text-zinc-300">
-            {invoice()}
+            {ZAP.invoiceReady} — {amountLabel()}. Please pay with your wallet.
           </p>
           <div class="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={onCopy}
-              class="rounded border border-zinc-600 px-3 py-1.5 text-sm hover:border-zinc-300"
-            >
-              {copied() ? "Copied" : "Copy invoice"}
-            </button>
-            <button
-              type="button"
-              onClick={onShare}
-              class="rounded border border-zinc-600 px-3 py-1.5 text-sm hover:border-zinc-300"
-            >
-              {shared() ? "Share text copied" : "Share your support"}
-            </button>
-            <button
-              type="button"
-              onClick={onConfirmPaid}
+              onClick={() => {
+                setQrOpen(true);
+              }}
               class="rounded bg-amber-400 px-3 py-1.5 text-sm font-semibold text-zinc-950"
             >
-              Confirm payment (update tally)
+              {ZAP.showQr}
+            </button>
+            {actionButtons()}
+            <button
+              type="button"
+              onClick={resetInvoice}
+              class="rounded border border-zinc-700 px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-100"
+            >
+              {ZAP.discard}
             </button>
           </div>
           <p class="mt-2 text-xs text-zinc-500">
@@ -192,7 +236,7 @@ export default function ZapPanel(props: {
               </button>
             ))}
             <input
-              class="w-32 rounded border border-zinc-700 bg-zinc-950 px-3 py-1 text-sm"
+              class="w-32 rounded border border-zinc-700 bg-zinc-950 px-3 py-1 text-sm text-zinc-100"
               inputMode="numeric"
               placeholder="Custom amount"
               value={custom()}
@@ -202,7 +246,7 @@ export default function ZapPanel(props: {
             />
           </div>
           <input
-            class="mt-2 w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm"
+            class="mt-2 w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm text-zinc-100"
             placeholder="Support message (optional)"
             value={comment()}
             onInput={(e) => {
