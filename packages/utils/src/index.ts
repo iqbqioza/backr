@@ -37,7 +37,25 @@ export function remainingLabel(nowSec: number, closedAtSec: number): string {
   return `${Math.max(1, Math.floor(diff / 60))}m left`;
 }
 
-/** 相対時刻 (〜前)。未来・現在は "just now" */
+/** 秒単位のカウントダウン (例: "1d 2h 3m 4s left")。now >= closedAt なら "Closed" */
+export function countdownLabel(nowSec: number, closedAtSec: number): string {
+  let diff = Math.floor(closedAtSec - nowSec);
+  if (diff <= 0) return "Closed";
+  const days = Math.floor(diff / 86400);
+  diff -= days * 86400;
+  const hours = Math.floor(diff / 3600);
+  diff -= hours * 3600;
+  const minutes = Math.floor(diff / 60);
+  const seconds = diff - minutes * 60;
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0 || days > 0) parts.push(`${hours}h`);
+  if (minutes > 0 || hours > 0 || days > 0) parts.push(`${minutes}m`);
+  parts.push(`${seconds}s`);
+  return `${parts.join(" ")} left`;
+}
+
+/** 相対時刻。未来・現在は "just now" */
 export function timeAgo(nowSec: number, atSec: number): string {
   const diff = Math.floor(nowSec - atSec);
   if (diff < 60) return "just now";

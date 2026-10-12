@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatSats, msatsToSatsString, progressPercent, remainingLabel, timeAgo } from "./index";
+import { countdownLabel, formatSats, msatsToSatsString, progressPercent, remainingLabel, timeAgo } from "./index";
 
 describe("msatsToSatsString", () => {
   it("formats exact sats", () => {
@@ -46,6 +46,20 @@ describe("remainingLabel", () => {
     expect(remainingLabel(0, 86400 * 3)).toBe("3d left");
     expect(remainingLabel(0, 7200)).toBe("2h left");
     expect(remainingLabel(0, 90)).toBe("1m left");
+  });
+});
+
+describe("countdownLabel", () => {
+  it("ends at deadline", () => {
+    expect(countdownLabel(100, 100)).toBe("Closed");
+    expect(countdownLabel(101, 100)).toBe("Closed");
+  });
+  it("counts down to seconds", () => {
+    expect(countdownLabel(0, 5)).toBe("5s left");
+    expect(countdownLabel(0, 90)).toBe("1m 30s left");
+    expect(countdownLabel(0, 3661)).toBe("1h 1m 1s left");
+    expect(countdownLabel(0, 90061)).toBe("1d 1h 1m 1s left");
+    expect(countdownLabel(0, 86400)).toBe("1d 0h 0m 0s left");
   });
 });
 

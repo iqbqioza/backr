@@ -1,7 +1,7 @@
 import { useParams } from "@solidjs/router";
 import { decodeNevent, encodeNevent } from "backr-nostr-nips";
-import { formatSats, progressPercent, remainingLabel, timeAgo } from "backr-utils";
-import { createSignal, onMount } from "solid-js";
+import { countdownLabel, formatSats, progressPercent, timeAgo } from "backr-utils";
+import { createSignal, onCleanup, onMount } from "solid-js";
 import { OGP_ASPECT_CLASS } from "../components/thumb";
 import CommentSection from "../components/CommentSection";
 import Markdown from "../components/Markdown";
@@ -55,6 +55,7 @@ export default function GoalDetail() {
     "desc",
   );
   const [commentCount, setCommentCount] = createSignal(0);
+  const [nowSec, setNowSec] = createSignal(Math.floor(Date.now() / 1000));
 
   const load = () => {
     setLoading(true);
@@ -107,16 +108,24 @@ export default function GoalDetail() {
     }).then(setSupporterProfiles);
   };
 
-  onMount(load);
+  onMount(() => {
+    load();
+    const timer = setInterval(() => {
+      setNowSec(Math.floor(Date.now() / 1000));
+    }, 1000);
+    onCleanup(() => {
+      clearInterval(timer);
+    });
+  });
 
   const deadline = () => {
     const closedAt = card()?.closedAt;
     if (closedAt === undefined) return "No deadline";
-    return remainingLabel(Math.floor(Date.now() / 1000), closedAt);
+    return countdownLabel(nowSec(), closedAt);
   };
 
   const status = () =>
-    goalStatus(raised(), card()?.goalMsats ?? 0n, Math.floor(Date.now() / 1000), card()?.closedAt);
+    goalStatus(raised(), card()?.goalMsats ?? 0n, nowSec(), card()?.closedAt);
 
   const feed = () => buildActivityFeed(supporters(), allComments(), reports());
   const recentCount = () => recentSupporterCount(supporters(), Math.floor(Date.now() / 1000));
