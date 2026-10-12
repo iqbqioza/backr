@@ -28,6 +28,19 @@ export function progressPercent(raisedMsats: bigint, goalMsats: bigint): number 
   return Math.round(pct * 10) / 10;
 }
 
+/**
+ * メーター表示幅 (percent)。raised > 0 でも極小だと見えないため
+ * 最小表示 (既定 2%) を保証する。上限 100。0 以下・目標不正は 0。
+ */
+export function meterWidthPercent(
+  raisedMsats: bigint,
+  goalMsats: bigint,
+  minVisible = 2,
+): number {
+  if (raisedMsats <= 0n || goalMsats <= 0n) return 0;
+  return Math.min(100, Math.max(minVisible, progressPercent(raisedMsats, goalMsats)));
+}
+
 /** 締切ラベル。now >= closedAt なら "Closed" */
 export function remainingLabel(nowSec: number, closedAtSec: number): string {
   const diff = Math.floor(closedAtSec - nowSec);

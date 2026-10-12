@@ -1,8 +1,8 @@
-import { formatSats, progressPercent } from "backr-utils";
+import { formatSats, meterWidthPercent, progressPercent } from "backr-utils";
 
 export default function ProgressMeter(props: { raisedMsats: bigint; goalMsats: bigint; compact?: boolean }) {
   const pct = () => progressPercent(props.raisedMsats, props.goalMsats);
-  const width = () => `${Math.min(100, pct())}%`;
+  const width = () => `${meterWidthPercent(props.raisedMsats, props.goalMsats)}%`;
   return (
     <div>
       <div class="h-2 w-full overflow-hidden rounded bg-zinc-800">

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countdownLabel, formatSats, msatsToSatsString, progressPercent, remainingLabel, timeAgo } from "./index";
+import { countdownLabel, formatSats, meterWidthPercent, msatsToSatsString, progressPercent, remainingLabel, timeAgo } from "./index";
 
 describe("msatsToSatsString", () => {
   it("formats exact sats", () => {
@@ -60,6 +60,20 @@ describe("countdownLabel", () => {
     expect(countdownLabel(0, 3661)).toBe("1h 1m 1s left");
     expect(countdownLabel(0, 90061)).toBe("1d 1h 1m 1s left");
     expect(countdownLabel(0, 86400)).toBe("1d 0h 0m 0s left");
+  });
+});
+
+describe("meterWidthPercent", () => {
+  it("is zero without progress", () => {
+    expect(meterWidthPercent(0n, 1000n)).toBe(0);
+    expect(meterWidthPercent(100n, 0n)).toBe(0);
+  });
+  it("guarantees minimum visibility", () => {
+    expect(meterWidthPercent(21000n, 10000000n)).toBe(2);
+    expect(meterWidthPercent(500n, 1000n)).toBe(50);
+  });
+  it("caps at 100", () => {
+    expect(meterWidthPercent(3000n, 1000n)).toBe(100);
   });
 });
 
