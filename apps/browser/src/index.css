@@ -1,1 +1,59 @@
 @import "tailwindcss";
+
+/* Progress meter electric spark. Respects reduced-motion: no animation then. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes meter-shine {
+    0% {
+      transform: translateX(-100%);
+    }
+    60%,
+    100% {
+      transform: translateX(250%);
+    }
+  }
+  @keyframes meter-spark-travel {
+    0% {
+      left: -4%;
+      opacity: 0;
+    }
+    8% {
+      opacity: 1;
+    }
+    85% {
+      opacity: 1;
+    }
+    100% {
+      left: 102%;
+      opacity: 0;
+    }
+  }
+  @keyframes meter-flicker {
+    0%,
+    41%,
+    43%,
+    71%,
+    73%,
+    100% {
+      opacity: 1;
+    }
+    42% {
+      opacity: 0.75;
+    }
+    72% {
+      opacity: 0.85;
+    }
+  }
+  .meter-shine {
+    animation: meter-shine 2.4s ease-in-out infinite;
+  }
+  .meter-spark {
+    animation: meter-spark-travel 1.8s linear infinite;
+  }
+  .meter-spark-slow {
+    animation-duration: 2.7s;
+    animation-delay: 0.9s;
+  }
+  .meter-flicker {
+    animation: meter-flicker 3.2s linear infinite;
+  }
+}
