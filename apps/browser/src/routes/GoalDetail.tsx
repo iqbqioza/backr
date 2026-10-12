@@ -1,4 +1,4 @@
-import { useParams } from "@solidjs/router";
+import { useLocation, useNavigate, useParams } from "@solidjs/router";
 import { decodeNevent, encodeNevent } from "backr-nostr-nips";
 import { countdownLabel, formatSats, formatSatsBtc, progressPercent, timeAgo } from "backr-utils";
 import { createEffect, createSignal, onCleanup, onMount } from "solid-js";
@@ -38,6 +38,16 @@ import { fetchGoalZapDataMulti, type Supporter } from "../lib/supporters";
 
 export default function GoalDetail() {
   const params = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const tab = () => {
+    const parts = location.pathname.split("/").filter(Boolean);
+    return parts.length > 2 ? parts[2] : "about";
+  };
+  const setTab = (id: string) => {
+    const base = `/g/${params["nevent"] ?? ""}`;
+    navigate(id === "about" ? base : `${base}/${id}`, { resolve: false });
+  };
   const [card, setCard] = createSignal<GoalCardData | null>(null);
   const [raised, setRaised] = createSignal(0n);
   const [supporters, setSupporters] = createSignal<Supporter[]>([]);
@@ -51,9 +61,6 @@ export default function GoalDetail() {
   const [confirming, setConfirming] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
   const [deleted, setDeleted] = createSignal(false);
-  const [tab, setTab] = createSignal<"desc" | "supporters" | "comments" | "reports" | "owner">(
-    "desc",
-  );
   const [commentCount, setCommentCount] = createSignal(0);
   const [nowSec, setNowSec] = createSignal(Math.floor(Date.now() / 1000));
   const [zapVisible, setZapVisible] = createSignal(false);
@@ -259,10 +266,10 @@ export default function GoalDetail() {
               <div class="sticky top-0 z-10 -mx-1 flex gap-1 overflow-x-auto border-b border-zinc-800 bg-zinc-950/95 px-1 py-1 backdrop-blur">
                 {(
                   [
-                    ["desc", "About"],
-                    ["supporters", `Backers (${supporters().length})`],
+                    ["about", "About"],
+                    ["backers", `Backers (${supporters().length})`],
                     ["comments", `Comments (${commentCount()})`],
-                    ["reports", `Updates (${reports().length})`],
+                    ["updates", `Updates (${reports().length})`],
                     ["owner", "Owner"],
                   ] as const
                 ).map(([id, label]) => (
@@ -281,12 +288,12 @@ export default function GoalDetail() {
                   </button>
                 ))}
               </div>
-              <section classList={{ hidden: tab() !== "desc" }}>
+              <section classList={{ hidden: tab() !== "about" }}>
                 <div class="text-zinc-300 [&_a]:text-amber-300 [&_a]:underline [&_img]:rounded-lg [&_li]:ml-5 [&_li]:list-disc [&_ol]:grid [&_ol]:gap-1 [&_p]:my-2 [&_pre]:overflow-auto [&_pre]:rounded [&_pre]:bg-zinc-950 [&_pre]:p-3 [&_ul]:grid [&_ul]:gap-1 [&_h1]:mb-2 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-bold [&_blockquote]:border-l-2 [&_blockquote]:border-zinc-700 [&_blockquote]:pl-3">
                   <Markdown source={card()?.description ?? ""} />
                 </div>
               </section>
-              <div classList={{ hidden: tab() !== "supporters" }}>
+              <div classList={{ hidden: tab() !== "backers" }}>
                 <SupporterHighlights supporters={supporters()} profiles={supporterProfiles()} />
                 <SupporterList supporters={supporters()} profiles={supporterProfiles()} />
               </div>
@@ -300,7 +307,7 @@ export default function GoalDetail() {
                   onComments={setAllComments}
                 />
               </div>
-              <div classList={{ hidden: tab() !== "reports" }}>
+              <div classList={{ hidden: tab() !== "updates" }}>
                 <div class="grid gap-6">
                   {isAuthor() && (
                     <ReportForm
