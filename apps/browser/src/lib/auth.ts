@@ -34,6 +34,50 @@ export function getSession(): Session | null {
   return session();
 }
 
+const SESSION_STORAGE_KEY = "backr:session";
+
+function storage(): Storage | null {
+  try {
+    if (typeof window === "undefined") return null;
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function persistSession(): void {
+  const store = storage();
+  if (store === null) return;
+  const s = session();
+  try {
+    if (s === null) store.removeItem(SESSION_STORAGE_KEY);
+    else store.setItem(SESSION_STORAGE_KEY, JSON.stringify(s));
+  } catch {
+    // private mode etc: stay memory-only
+  }
+}
+
+/**
+ * Reload survival: restores the display session for methods whose keys
+ * live outside the page (extension / none). nsec/bunker secrets are
+ * memory-only by policy and cannot be restored.
+ */
+export function restoreSession(): void {
+  const store = storage();
+  if (store === null || session() !== null) return;
+  try {
+    const raw = store.getItem(SESSION_STORAGE_KEY);
+    if (raw === null) return;
+    const data = JSON.parse(raw) as { method?: unknown; pubkey?: unknown };
+    if (typeof data.pubkey !== "string" || !/^[0-9a-f]{64}$/.test(data.pubkey)) return;
+    if (data.method === "readonly" || data.method === "nip07") {
+      setSession({ method: data.method, pubkey: data.pubkey });
+    }
+  } catch {
+    // corrupted entry: stay logged out
+  }
+}
+
 /** 秘密鍵・bunker 接続はメモリ保持のみ。保存・送信しない */
 let nsecSecret: Uint8Array | null = null;
 let bunkerClient: BunkerClient | null = null;
@@ -43,6 +87,7 @@ export function loginNip07(pubkey: string): void {
   bunkerClient?.close();
   bunkerClient = null;
   setSession({ method: "nip07", pubkey });
+  persistSession();
 }
 
 export function loginNsec(secretHex: string, pubkey: string): void {
@@ -51,6 +96,7 @@ export function loginNsec(secretHex: string, pubkey: string): void {
   bunkerClient?.close();
   bunkerClient = null;
   setSession({ method: "nsec", pubkey });
+  persistSession();
 }
 
 export function loginReadonly(pubkey: string): void {
@@ -58,6 +104,7 @@ export function loginReadonly(pubkey: string): void {
   bunkerClient?.close();
   bunkerClient = null;
   setSession({ method: "readonly", pubkey });
+  persistSession();
 }
 
 /** NIP-46 bunker 接続。署名器側の承認が必要 */
@@ -69,6 +116,7 @@ export async function loginBunker(bunkerUrl: string): Promise<void> {
   bunkerClient?.close();
   bunkerClient = client;
   setSession({ method: "bunker", pubkey: client.userPubkey });
+  persistSession();
 }
 
 export function logout(): void {
@@ -76,6 +124,7 @@ export function logout(): void {
   bunkerClient?.close();
   bunkerClient = null;
   setSession(null);
+  persistSession();
 }
 
 export function canSign(): boolean {
@@ -137,3 +186,5 @@ export async function signWithSession(unsigned: UnsignedEvent): Promise<NostrEve
     return null;
   }
 }
+
+restoreSession();
