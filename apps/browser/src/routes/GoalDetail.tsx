@@ -16,7 +16,7 @@ import SupporterList from "../components/SupporterList";
 import ZapPanel from "../components/ZapPanel";
 import { getSession } from "../lib/auth";
 import { DEFAULT_RELAY } from "../lib/const";
-import { ACTIVITY } from "../lib/copy";
+import { ACTIVITY, ZAP } from "../lib/copy";
 import { requestDeletion } from "../lib/deletion";
 import {
   fetchGoalById,
@@ -160,7 +160,7 @@ export default function GoalDetail() {
   };
 
   return (
-    <div>
+    <div class="pb-20 lg:pb-0">
       <a href="/" class="text-sm text-zinc-400 hover:text-zinc-100">
         ← Back to list
       </a>
@@ -327,18 +327,20 @@ export default function GoalDetail() {
                     : "Unverified: cannot tally because creator's payment target is unknown"}
                 </p>
               </div>
-              <ZapPanel
-                goalId={card()?.id ?? ""}
-                recipientPubkey={card()?.pubkey ?? ""}
-                profile={profile()}
-                relays={card()?.relays ?? []}
-                goalMsats={card()?.goalMsats ?? 0n}
-                goalTitle={card()?.title ?? ""}
-                ended={card()?.closedAt !== undefined && Math.floor(Date.now() / 1000) >= (card()?.closedAt ?? 0)}
-                onPaid={() => {
-                  void refreshStats(profile());
-                }}
-              />
+              <div id="zap" class="scroll-mt-20">
+                <ZapPanel
+                  goalId={card()?.id ?? ""}
+                  recipientPubkey={card()?.pubkey ?? ""}
+                  profile={profile()}
+                  relays={card()?.relays ?? []}
+                  goalMsats={card()?.goalMsats ?? 0n}
+                  goalTitle={card()?.title ?? ""}
+                  ended={card()?.closedAt !== undefined && Math.floor(Date.now() / 1000) >= (card()?.closedAt ?? 0)}
+                  onPaid={() => {
+                    void refreshStats(profile());
+                  }}
+                />
+              </div>
               <div class="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
                 <div class="flex -space-x-2">
                   {supporters().slice(0, 5).map((s) =>
@@ -460,6 +462,17 @@ export default function GoalDetail() {
                 </p>
               )}
             </aside>
+          </div>
+          <div class="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-zinc-950/90 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden">
+            <button
+              type="button"
+              onClick={() => {
+                document.getElementById("zap")?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+              class="w-full rounded-lg bg-amber-400 px-4 py-3 font-semibold text-zinc-950"
+            >
+              {ZAP.submit}
+            </button>
           </div>
         </article>
       )}
