@@ -13,7 +13,7 @@ async function publishReport(args: {
 }): Promise<ReportData> {
   const session = getSession();
   if (session === null || session.method === "readonly") {
-    throw new Error("報告には署名ログインが必要です");
+    throw new Error("Signing required to post an update");
   }
   const draft = buildReport({
     authorPubkey: session.pubkey,
@@ -24,11 +24,11 @@ async function publishReport(args: {
     summary: args.summary,
     content: args.content,
   });
-  if (draft === null) throw new Error("報告を組み立てられません");
+  if (draft === null) throw new Error("Could not build update");
   const signed = await signWithSession(draft);
-  if (signed === null) throw new Error("署名に失敗しました");
+  if (signed === null) throw new Error("Signing failed");
   const result = await publishEvent(args.relayUrl, signed);
-  if (!result.accepted) throw new Error(`リレーに拒否されました: ${result.message}`);
+  if (!result.accepted) throw new Error(`Relay rejected: ${result.message}`);
   return {
     id: signed.id,
     author: session.pubkey,

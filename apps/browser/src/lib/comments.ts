@@ -101,7 +101,7 @@ export async function postComment(args: {
 }): Promise<CommentView> {
   const session = getSession();
   if (session === null || session.method === "readonly") {
-    throw new Error("コメントには署名ログインが必要です");
+    throw new Error("Signing required to comment");
   }
   const relayHint = args.relayUrl;
   const draft =
@@ -119,11 +119,11 @@ export async function postComment(args: {
           relayHint,
           content: args.content,
         });
-  if (draft === null) throw new Error("コメントを組み立てられません");
+  if (draft === null) throw new Error("Could not build comment");
   const signed = await signWithSession(draft);
-  if (signed === null) throw new Error("署名に失敗しました");
+  if (signed === null) throw new Error("Signing failed");
   const result = await publishEvent(args.relayUrl, signed);
-  if (!result.accepted) throw new Error(`リレーに拒否されました: ${result.message}`);
+  if (!result.accepted) throw new Error(`Relay rejected: ${result.message}`);
   const view = parseComment(signed);
   if (view === null) throw new Error("unreachable");
   return view;

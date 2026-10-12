@@ -25,19 +25,19 @@ export function buildActivityFeed(
       kind: "zap",
       at: s.createdAt,
       pubkey: s.pubkey,
-      text: `${formatSats(s.msats)}支援`,
+      text: `Zapped ${formatSats(s.msats)}`,
     })),
     ...comments.map((c): ActivityItem => ({
       kind: "comment",
       at: c.createdAt,
       pubkey: c.pubkey,
-      text: "コメントしました",
+      text: "Commented",
     })),
     ...reports.map((r): ActivityItem => ({
       kind: "report",
       at: r.createdAt,
       pubkey: r.author,
-      text: `活動報告「${r.title}」`,
+      text: `Update "${r.title}"`,
     })),
   ];
   return items.sort((a, b) => b.at - a.at).slice(0, limit);

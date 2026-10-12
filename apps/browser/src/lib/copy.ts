@@ -146,6 +146,8 @@ export const ZAP = {
   invoiceBadResponse: (status: number) => `Invoice request failed: ${status}`,
   invoiceMissing: (reason: string) => `Could not get an invoice: ${reason}`,
   amountMismatch: "Invoice amount does not match",
+  buildFailed: "Could not build zap request",
+  signFailed: "Signing failed",
   invoiceUnknown: "unknown",
   noClipboard: "Clipboard unavailable — copy the invoice manually",
 } as const;

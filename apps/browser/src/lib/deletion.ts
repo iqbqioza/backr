@@ -10,7 +10,7 @@ export async function requestDeletion(
 ): Promise<void> {
   const session = getSession();
   if (session === null || session.method === "readonly") {
-    throw new Error("削除には署名ログインが必要です");
+    throw new Error("Signing required to delete");
   }
   const draft = buildDeletionEvent({
     pubkey: session.pubkey,
@@ -18,9 +18,9 @@ export async function requestDeletion(
     relayHint: relayUrl,
     reason,
   });
-  if (draft === null) throw new Error("削除イベントを組み立てられません");
+  if (draft === null) throw new Error("Could not build deletion event");
   const signed = await signWithSession(draft);
-  if (signed === null) throw new Error("署名に失敗しました");
+  if (signed === null) throw new Error("Signing failed");
   const result = await publishEvent(relayUrl, signed);
-  if (!result.accepted) throw new Error(`リレーに拒否されました: ${result.message}`);
+  if (!result.accepted) throw new Error(`Relay rejected: ${result.message}`);
 }

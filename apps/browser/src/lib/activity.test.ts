@@ -35,6 +35,12 @@ describe("buildActivityFeed", () => {
     expect(feed.map((f) => f.kind)).toEqual(["comment", "report"]);
     expect(feed[1].text).toContain("進捗");
   });
+  it("renders English item texts", () => {
+    const feed = buildActivityFeed([supporter(100)], [comment(200)], [report(300)], 5);
+    expect(feed.find((f) => f.kind === "zap")?.text).toBe("Zapped 1 sats");
+    expect(feed.find((f) => f.kind === "comment")?.text).toBe("Commented");
+    expect(feed.find((f) => f.kind === "report")?.text).toBe('Update "進捗"');
+  });
 });
 
 describe("recentSupporterCount", () => {

@@ -7,6 +7,7 @@ import {
 } from "backr-nostr-nips";
 import { decodeBolt11AmountMsats } from "backr-nostr-utils";
 import { getSession, signWithSession } from "./auth";
+import { ZAP } from "./copy";
 import type { ProfileView } from "./goals";
 
 export interface PayTarget {
@@ -52,20 +53,20 @@ export async function fetchLnurlPay(payUrl: string): Promise<LnurlPayInfo> {
   try {
     response = await fetch(payUrl);
   } catch {
-    throw new Error("LNURL サーバに接続できません");
+    throw new Error(ZAP.lnurlConnectFailed);
   }
-  if (!response.ok) throw new Error(`LNURL 取得失敗: ${response.status}`);
+  if (!response.ok) throw new Error(ZAP.lnurlBadResponse(response.status));
   const data = (await response.json()) as Record<string, unknown>;
-  if (data["tag"] !== "payRequest") throw new Error("LNURL-pay ではありません");
-  if (data["allowsNostr"] !== true) throw new Error("このウォレットは Zap に対応していません");
+  if (data["tag"] !== "payRequest") throw new Error(ZAP.notPayRequest);
+  if (data["allowsNostr"] !== true) throw new Error(ZAP.noNostr);
   if (typeof data["callback"] !== "string" || data["callback"].length === 0) {
-    throw new Error("callback がありません");
+    throw new Error(ZAP.noCallback);
   }
   if (typeof data["minSendable"] !== "number" || typeof data["maxSendable"] !== "number") {
-    throw new Error("送金範囲が不正です");
+    throw new Error(ZAP.badRange);
   }
   if (typeof data["nostrPubkey"] !== "string" || !/^[0-9a-f]{64}$/.test(data["nostrPubkey"])) {
-    throw new Error("nostrPubkey がありません");
+    throw new Error(ZAP.noNostrPubkey);
   }
   return {
     callback: data["callback"],
@@ -88,10 +89,10 @@ export async function fetchLnurlPayCached(payUrl: string, ttlMs = 300000): Promi
 
 export function checkAmountRange(amountMsats: bigint, info: LnurlPayInfo): string | null {
   if (amountMsats < BigInt(Math.floor(info.minSendable))) {
-    return `最低 ${info.minSendable / 1000} sats から送金できます`;
+    return ZAP.min(info.minSendable / 1000);
   }
   if (amountMsats > BigInt(Math.floor(info.maxSendable))) {
-    return `上限は ${info.maxSendable / 1000} sats です`;
+    return ZAP.max(info.maxSendable / 1000);
   }
   return null;
 }
@@ -114,16 +115,16 @@ export async function requestZapInvoice(
   try {
     response = await fetch(`${callback}${query}`);
   } catch {
-    throw new Error("callback に接続できません");
+    throw new Error(ZAP.callbackFailed);
   }
-  if (!response.ok) throw new Error(`インボイス取得失敗: ${response.status}`);
+  if (!response.ok) throw new Error(ZAP.invoiceBadResponse(response.status));
   const data = (await response.json()) as Record<string, unknown>;
   if (typeof data["pr"] !== "string") {
-    const reason = typeof data["reason"] === "string" ? data["reason"] : "unknown";
-    throw new Error(`インボイスを取得できません: ${reason}`);
+    const reason = typeof data["reason"] === "string" ? data["reason"] : ZAP.invoiceUnknown;
+    throw new Error(ZAP.invoiceMissing(reason));
   }
   const decoded = decodeBolt11AmountMsats(data["pr"]);
-  if (decoded !== amountMsats) throw new Error("インボイスの金額が一致しません");
+  if (decoded !== amountMsats) throw new Error(ZAP.amountMismatch);
   return data["pr"];
 }
 
@@ -142,7 +143,7 @@ export async function signZapRequest(args: {
   comment: string;
 }): Promise<SignedZapRequest> {
   const session = getSession();
-  if (session === null) throw new Error("ログインが必要です");
+  if (session === null) throw new Error(ZAP.needSession);
   const draft = buildZapRequest({
     senderPubkey: session.pubkey,
     recipientPubkey: args.recipientPubkey,
@@ -152,8 +153,8 @@ export async function signZapRequest(args: {
     lnurl: args.lnurl,
     comment: args.comment,
   });
-  if (draft === null) throw new Error("zap request を組み立てられません");
+  if (draft === null) throw new Error(ZAP.buildFailed);
   const signed = await signWithSession(draft);
-  if (signed === null) throw new Error("署名に失敗しました");
+  if (signed === null) throw new Error(ZAP.signFailed);
   return { zapRequest: signed, lnurl: args.lnurl };
 }

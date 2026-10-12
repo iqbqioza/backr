@@ -18,7 +18,7 @@ export class BunkerError extends Error {}
 export class BunkerAuthRequired extends BunkerError {
   url: string;
   constructor(url: string) {
-    super(`別画面での認証が必要です: ${url}`);
+    super(`Authentication is required on another screen: ${url}`);
     this.url = url;
   }
 }
@@ -43,7 +43,7 @@ function openSocket(url: string, timeoutMs: number): Promise<WebSocket> {
     try {
       socket = new WebSocket(url);
     } catch (err) {
-      reject(err instanceof Error ? err : new BunkerError("リレーに接続できません"));
+      reject(err instanceof Error ? err : new BunkerError("Could not connect to relay"));
       return;
     }
     const timer = setTimeout(() => {
@@ -52,7 +52,7 @@ function openSocket(url: string, timeoutMs: number): Promise<WebSocket> {
       } catch {
         // noop
       }
-      reject(new BunkerError("リレーに接続できません"));
+      reject(new BunkerError("Could not connect to relay"));
     }, timeoutMs);
     socket.addEventListener("open", () => {
       clearTimeout(timer);
@@ -60,7 +60,7 @@ function openSocket(url: string, timeoutMs: number): Promise<WebSocket> {
     });
     socket.addEventListener("error", () => {
       clearTimeout(timer);
-      reject(new BunkerError("リレーに接続できません"));
+      reject(new BunkerError("Could not connect to relay"));
     });
   });
 }
@@ -74,11 +74,11 @@ export async function connectBunker(
   opts?: { clientSecretHex?: string; timeoutMs?: number; metadata?: string },
 ): Promise<BunkerClient> {
   const pointer = parseBunkerUrl(bunkerUrl);
-  if (pointer === null) throw new BunkerError("bunker URL が不正です");
+  if (pointer === null) throw new BunkerError("Invalid bunker URL");
   const timeoutMs = opts?.timeoutMs ?? 120000;
   const clientSecret = opts?.clientSecretHex ?? generateSecretKey();
   const clientPubkey = derivePublicKey(clientSecret);
-  if (clientPubkey === null) throw new BunkerError("クライアント鍵を生成できません");
+  if (clientPubkey === null) throw new BunkerError("Could not generate client key");
 
   const socket = await openSocket(pointer.relays[0], Math.min(timeoutMs, 30000));
   const pending = new Map<string, Pending>();
@@ -123,18 +123,18 @@ export async function connectBunker(
       method,
       params,
     });
-    if (built === null) return Promise.reject(new BunkerError("要求を組み立てられません"));
+    if (built === null) return Promise.reject(new BunkerError("Could not build request"));
     const signed = signEvent(built.event, clientSecret);
-    if (signed === null) return Promise.reject(new BunkerError("署名に失敗しました"));
+    if (signed === null) return Promise.reject(new BunkerError("Signing failed"));
     try {
       socket.send(JSON.stringify(["EVENT", signed]));
     } catch {
-      return Promise.reject(new BunkerError("送信に失敗しました"));
+      return Promise.reject(new BunkerError("Failed to send"));
     }
     return new Promise<string>((resolve, reject) => {
       const timer = setTimeout(() => {
         pending.delete(built.id);
-        reject(new BunkerError(`応答がありません: ${method}`));
+        reject(new BunkerError(`No response: ${method}`));
       }, ms);
       pending.set(built.id, {
         settle: (result, error) => {
@@ -144,7 +144,7 @@ export async function connectBunker(
             return;
           }
           if (result === undefined) {
-            reject(new BunkerError("応答が空です"));
+            reject(new BunkerError("Empty response"));
             return;
           }
           resolve(result);
@@ -165,7 +165,7 @@ export async function connectBunker(
     );
   } catch {
     close();
-    throw new BunkerError("購読に失敗しました");
+    throw new BunkerError("Failed to subscribe");
   }
 
   try {
@@ -178,14 +178,14 @@ export async function connectBunker(
       }),
       timeoutMs,
     );
-    if (ack !== "ack") throw new BunkerError(`接続が拒否されました: ${ack}`);
+    if (ack !== "ack") throw new BunkerError(`Connection rejected: ${ack}`);
     try {
       await request("switch_relays", [], 15000);
     } catch {
       // 現在のリレーを維持
     }
     const userPubkey = await request("get_public_key", [], timeoutMs);
-    if (!/^[0-9a-f]{64}$/.test(userPubkey)) throw new BunkerError("不正なユーザ公開鍵です");
+    if (!/^[0-9a-f]{64}$/.test(userPubkey)) throw new BunkerError("Invalid user pubkey");
     return {
       userPubkey,
       remotePubkey: pointer.remotePubkey,
@@ -207,16 +207,16 @@ export async function connectBunker(
         try {
           parsed = JSON.parse(result) as unknown;
         } catch {
-          throw new BunkerError("署名応答を解釈できません");
+          throw new BunkerError("Could not parse sign response");
         }
         if (!isNostrEventLike(parsed) || !verifyEventSignature(parsed)) {
-          throw new BunkerError("署名を検証できません");
+          throw new BunkerError("Could not verify signature");
         }
         return parsed;
       },
       ping: async () => {
         const result = await request("ping", [], 15000);
-        if (result !== "pong") throw new BunkerError("ping 失敗");
+        if (result !== "pong") throw new BunkerError("ping failed");
       },
       close,
     };

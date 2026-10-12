@@ -48,8 +48,8 @@ describe("fetchLnurlPay", () => {
     const info = await fetchLnurlPay("https://example.com/.well-known/lnurlp/alice");
     expect(info.callback).toBe("https://example.com/cb");
     expect(checkAmountRange(5000n, info)).toBeNull();
-    expect(checkAmountRange(1n, info)).toContain("最低");
-    expect(checkAmountRange(2000000n, info)).toContain("上限");
+    expect(checkAmountRange(1n, info)).toContain("Minimum");
+    expect(checkAmountRange(2000000n, info)).toContain("Maximum");
   });
   it("rejects non-zap wallets", async () => {
     vi.stubGlobal(
@@ -58,7 +58,7 @@ describe("fetchLnurlPay", () => {
         jsonResponse({ tag: "payRequest", callback: "https://example.com/cb", minSendable: 1, maxSendable: 2, allowsNostr: false, nostrPubkey: "a".repeat(64) }),
       ),
     );
-    await expect(fetchLnurlPay("https://example.com/x")).rejects.toThrow("Zap に対応していません");
+    await expect(fetchLnurlPay("https://example.com/x")).rejects.toThrow("does not support zaps");
   });
   it("rejects missing nostrPubkey", async () => {
     vi.stubGlobal(
@@ -89,7 +89,7 @@ describe("requestZapInvoice", () => {
   it("rejects amount mismatch", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ pr: "lnbc10u1abcdef" })));
     await expect(requestZapInvoice("https://example.com/cb", 999n, zapRequest, "lnurl1test")).rejects.toThrow(
-      "金額が一致しません",
+      "does not match",
     );
   });
 });

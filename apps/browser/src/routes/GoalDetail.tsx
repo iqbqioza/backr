@@ -16,6 +16,7 @@ import SupporterList from "../components/SupporterList";
 import ZapPanel from "../components/ZapPanel";
 import { getSession } from "../lib/auth";
 import { DEFAULT_RELAY } from "../lib/const";
+import { ACTIVITY } from "../lib/copy";
 import { requestDeletion } from "../lib/deletion";
 import {
   fetchGoalById,
@@ -369,7 +370,7 @@ export default function GoalDetail() {
                                 : "bg-green-900 text-green-200"
                           }`}
                         >
-                          {item.kind === "zap" ? "supporters" : item.kind === "comment" ? "comment" : "update"}
+                          {item.kind === "zap" ? ACTIVITY.zap : item.kind === "comment" ? ACTIVITY.comment : ACTIVITY.report}
                         </span>
                         <span class="truncate text-zinc-300">{item.text}</span>
                         <span class="ml-auto shrink-0 text-xs text-zinc-500">
