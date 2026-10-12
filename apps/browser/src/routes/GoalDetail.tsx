@@ -8,11 +8,10 @@ import Markdown from "../components/Markdown";
 import SafeImage from "../components/SafeImage";
 import ProgressMeter from "../components/ProgressMeter";
 import ReportForm from "../components/ReportForm";
-import RelayBar from "../components/RelayBar";
 import ReportList from "../components/ReportList";
 import { avatarImage } from "../components/people";
 import SupporterHighlights from "../components/SupporterHighlights";
-import { EmptyState, ErrorState, Loading } from "../components/States";
+import { EmptyState, ErrorState } from "../components/States";
 import SupporterList from "../components/SupporterList";
 import ZapPanel from "../components/ZapPanel";
 import { getSession, getUserRelays } from "../lib/auth";
@@ -39,7 +38,6 @@ import { fetchGoalZapDataMulti, type Supporter } from "../lib/supporters";
 
 export default function GoalDetail() {
   const params = useParams();
-  const [relay, setRelay] = createSignal(DEFAULT_RELAY);
   const [card, setCard] = createSignal<GoalCardData | null>(null);
   const [raised, setRaised] = createSignal(0n);
   const [supporters, setSupporters] = createSignal<Supporter[]>([]);
@@ -64,10 +62,9 @@ export default function GoalDetail() {
   /** 選択リレー + デフォルト + goal の relays タグ + 作成者の NIP-65 read + 本人の read リレー */
   const zapRelays = (): string[] => {
     const current = card();
-    if (current === null) return [relay()];
+    if (current === null) return [DEFAULT_RELAY];
     return [
       ...new Set([
-        relay(),
         DEFAULT_RELAY,
         ...current.relays.slice(0, 3),
         ...extraRelays(),
@@ -86,9 +83,8 @@ export default function GoalDetail() {
       return;
     }
     const goalId = decoded.id;
-    const url = decoded.relays[0] ?? relay();
-    setRelay(url);
-    const goalCandidates = [...new Set([...decoded.relays.slice(0, 3), relay(), DEFAULT_RELAY])];
+    const url = decoded.relays[0] ?? DEFAULT_RELAY;
+    const goalCandidates = [...new Set([...decoded.relays.slice(0, 3), DEFAULT_RELAY])];
     fetchGoalByIdMulti(goalCandidates, goalId)
       .then((found) => {
         if (found === null) {
@@ -206,7 +202,7 @@ export default function GoalDetail() {
     const id = card()?.id;
     if (id === undefined || deleting()) return;
     setDeleting(true);
-    requestDeletion(relay(), [id], "goal deleted by author")
+    requestDeletion(DEFAULT_RELAY, [id], "goal deleted by author")
       .then(() => {
         setDeleted(true);
       })
@@ -221,13 +217,6 @@ export default function GoalDetail() {
 
   return (
     <div class="pb-20 lg:pb-0">
-      <a href="/" class="text-sm text-zinc-400 hover:text-zinc-100">
-        ← Back to list
-      </a>
-      <div class="mt-2">
-        <RelayBar relay={relay()} onChange={setRelay} />
-      </div>
-      {loading() && <Loading />}
       {error() !== null && !loading() && <ErrorState message={error() ?? ""} onRetry={load} />}
       {!loading() && error() === null && card() === null && (
         <EmptyState message="Project not found." />
@@ -303,7 +292,7 @@ export default function GoalDetail() {
               </div>
               <div classList={{ hidden: tab() !== "comments" }}>
                 <CommentSection
-                  relayUrl={relay()}
+                  relayUrl={DEFAULT_RELAY}
                   relays={zapRelays()}
                   goalId={card()?.id ?? ""}
                   goalAuthor={card()?.pubkey ?? ""}
@@ -315,7 +304,7 @@ export default function GoalDetail() {
                 <div class="grid gap-6">
                   {isAuthor() && (
                     <ReportForm
-                      relayUrl={relay()}
+                      relayUrl={DEFAULT_RELAY}
                       goalId={card()?.id ?? ""}
                       onPosted={(report) => {
                         setReports(mergeReports(reports(), [report]));
@@ -324,7 +313,7 @@ export default function GoalDetail() {
                   )}
                   <ReportList
                     reports={reports()}
-                    relayUrl={relay()}
+                    relayUrl={DEFAULT_RELAY}
                     goalId={card()?.id ?? ""}
                     onChange={setReports}
                   />

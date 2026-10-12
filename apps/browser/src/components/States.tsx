@@ -1,7 +1,3 @@
-export function Loading(props: { label?: string }) {
-  return <p class="py-8 text-center text-zinc-400">{props.label ?? "Loading…"}</p>;
-}
-
 export function ErrorState(props: { message: string; onRetry?: () => void }) {
   return (
     <div class="rounded-lg border border-red-900 bg-red-950/40 p-4 text-center">

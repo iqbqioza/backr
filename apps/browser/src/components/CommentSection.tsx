@@ -268,7 +268,6 @@ function ReplyForm(props: {
 
   return (
     <section>
-      {loading() && <p class="text-zinc-400">Loading…</p>}
       {!loading() && comments().length === 0 && (
         <p class="mb-2 text-sm text-zinc-400">No comments yet. Be the first!</p>
       )}

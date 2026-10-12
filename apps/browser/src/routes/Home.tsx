@@ -3,8 +3,7 @@ import { formatSats, progressPercent, remainingLabel } from "backr-utils";
 import { createEffect, createSignal, onMount, type JSX } from "solid-js";
 import GoalCard from "../components/GoalCard";
 import SafeImage from "../components/SafeImage";
-import RelayBar from "../components/RelayBar";
-import { EmptyState, ErrorState, Loading } from "../components/States";
+import { EmptyState, ErrorState } from "../components/States";
 import { DEFAULT_RELAY } from "../lib/const";
 import { getUserRelays } from "../lib/auth";
 import { fetchGoalCardsMulti, fetchProfiles, type GoalCardData } from "../lib/goals";
@@ -24,7 +23,6 @@ function Section(props: { title: string; children: JSX.Element }) {
 }
 
 export default function Home() {
-  const [relay, setRelay] = createSignal(DEFAULT_RELAY);
   const [cards, setCards] = createSignal<GoalCardData[]>([]);
   const [zapData, setZapData] = createSignal(new Map<string, ValidatedGoalZap>());
   const [loading, setLoading] = createSignal(true);
@@ -36,8 +34,8 @@ export default function Home() {
   const load = () => {
     setLoading(true);
     setError(null);
-    const urls = [...new Set([relay(), DEFAULT_RELAY, ...getUserRelays().read.slice(0, 3)])];
-    const url = relay();
+    const urls = [...new Set([DEFAULT_RELAY, ...getUserRelays().read.slice(0, 3)])];
+    const url = DEFAULT_RELAY;
     fetchGoalCardsMulti(urls)
       .then((fetched) => {
         setCards(fetched);
@@ -108,8 +106,6 @@ export default function Home() {
 
   return (
     <div>
-      <RelayBar relay={relay()} onChange={setRelay} />
-      {loading() && <Loading />}
       {error() !== null && !loading() && <ErrorState message={`Relay fetch failed: ${error()}`} onRetry={load} />}
       {!loading() && error() === null && cards().length === 0 && (
         <EmptyState message='No projects yet. Publish the first one from "Start a project".' />
@@ -162,15 +158,6 @@ export default function Home() {
             );
           })()}
         </a>
-      )}
-      {!loading() && sections().recommended.length > 0 && (
-        <Section title={HOME.recommended} >
-          {sections().recommended.map((card) => (
-            <div class="w-64 shrink-0">
-              <GoalCard card={card} zap={zapOf(card.id)} />
-            </div>
-          ))}
-        </Section>
       )}
       {!loading() && sections().endingSoon.length > 0 && (
         <Section title={HOME.endingSoon} >

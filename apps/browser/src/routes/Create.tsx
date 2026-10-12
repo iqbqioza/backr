@@ -11,7 +11,6 @@ import { canSign, getSession, getUserRelays, signWithSession } from "../lib/auth
 import { OGP_ASPECT_CLASS } from "../components/thumb";
 import { CREATE } from "../lib/copy";
 import Markdown from "../components/Markdown";
-import RelayBar from "../components/RelayBar";
 import SafeImage from "../components/SafeImage";
 import { DEFAULT_RELAY } from "../lib/const";
 import { publishEventMulti } from "../lib/relay";
@@ -25,7 +24,6 @@ export default function Create() {
   const [closedAt, setClosedAt] = createSignal("");
   const [image, setImage] = createSignal("");
   const [relatedUrl, setRelatedUrl] = createSignal("");
-  const [relay, setRelay] = createSignal(DEFAULT_RELAY);
   const [unsigned, setUnsigned] = createSignal<UnsignedEvent | null>(null);
   const [preview, setPreview] = createSignal<string | null>(null);
   const [errors, setErrors] = createSignal<string[]>([]);
@@ -66,7 +64,7 @@ export default function Create() {
       setErrors(problems);
       return null;
     }
-    const relayUrl = relay().trim().length > 0 ? relay().trim() : DEFAULT_RELAY;
+    const relayUrl = DEFAULT_RELAY;
     const tags: string[][] = [
       ["relays", relayUrl],
       ["amount", (amount ?? 0n).toString()],
@@ -119,7 +117,6 @@ export default function Create() {
         }
         const targets = [
           ...new Set([
-            relay().trim().length > 0 ? relay().trim() : DEFAULT_RELAY,
             DEFAULT_RELAY,
             ...getUserRelays().write.slice(0, 3),
           ]),
@@ -156,7 +153,6 @@ export default function Create() {
   return (
     <div>
       <h1 class="mb-4 text-2xl font-bold">{CREATE.title}</h1>
-      <RelayBar relay={relay()} onChange={setRelay} />
       {session() === null && (
         <p class="mb-4 rounded border border-zinc-700 p-3 text-sm text-zinc-300">
           {CREATE.loginNotice}
@@ -315,7 +311,7 @@ export default function Create() {
               disabled={publishing()}
               class="mt-3 w-full rounded bg-amber-400 px-4 py-2 font-semibold text-zinc-950 disabled:opacity-50"
             >
-              {publishing() ? "Publishing…" : `${CREATE.publish(relay().trim().length > 0 ? relay().trim() : DEFAULT_RELAY)}`}
+              {publishing() ? "Publishing…" : `${CREATE.publish(DEFAULT_RELAY)}`}
             </button>
           )}
           {published() !== null && (

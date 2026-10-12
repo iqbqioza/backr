@@ -46,7 +46,6 @@ export const STATES = {
 
 export const HOME = {
   heroTag: "Featured project",
-  recommended: "Recommended for you",
   endingSoon: "Ending soon",
   fresh: "New arrivals",
 } as const;
