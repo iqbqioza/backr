@@ -1,7 +1,7 @@
 import { useParams } from "@solidjs/router";
 import { decodeNevent, encodeNevent } from "backr-nostr-nips";
 import { countdownLabel, formatSats, progressPercent, timeAgo } from "backr-utils";
-import { createSignal, onCleanup, onMount } from "solid-js";
+import { createEffect, createSignal, onCleanup, onMount } from "solid-js";
 import { OGP_ASPECT_CLASS } from "../components/thumb";
 import CommentSection from "../components/CommentSection";
 import Markdown from "../components/Markdown";
@@ -56,6 +56,7 @@ export default function GoalDetail() {
   );
   const [commentCount, setCommentCount] = createSignal(0);
   const [nowSec, setNowSec] = createSignal(Math.floor(Date.now() / 1000));
+  const [zapVisible, setZapVisible] = createSignal(false);
 
   const load = () => {
     setLoading(true);
@@ -107,6 +108,26 @@ export default function GoalDetail() {
       );
     }).then(setSupporterProfiles);
   };
+
+  // 支援欄が見えている間は下部固定ボタンを隠す
+  createEffect(() => {
+    if (card() === null || typeof document === "undefined" || typeof IntersectionObserver === "undefined") {
+      return;
+    }
+    const target = document.getElementById("zap");
+    if (target === null) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (first !== undefined) setZapVisible(first.isIntersecting);
+      },
+      { threshold: 0.7 },
+    );
+    observer.observe(target);
+    onCleanup(() => {
+      observer.disconnect();
+    });
+  });
 
   onMount(() => {
     load();
@@ -463,17 +484,19 @@ export default function GoalDetail() {
               )}
             </aside>
           </div>
-          <div class="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-zinc-950/90 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden">
-            <button
-              type="button"
-              onClick={() => {
-                document.getElementById("zap")?.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
-              class="w-full rounded-lg bg-amber-400 px-4 py-3 font-semibold text-zinc-950"
-            >
-              {ZAP.submit}
-            </button>
-          </div>
+          {!zapVisible() && (
+            <div class="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-zinc-950/90 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden">
+              <button
+                type="button"
+                onClick={() => {
+                  document.getElementById("zap")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                class="w-full rounded-lg bg-amber-400 px-4 py-3 font-semibold text-zinc-950"
+              >
+                {ZAP.submit}
+              </button>
+            </div>
+          )}
         </article>
       )}
     </div>
