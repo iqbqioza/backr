@@ -7,7 +7,7 @@ export default function ProgressMeter(props: { raisedMsats: bigint; goalMsats: b
     <div>
       <div class="h-2 w-full overflow-hidden rounded bg-zinc-800">
         <div
-          class="meter-flicker relative h-full overflow-hidden rounded bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.55)]"
+          class="meter-energy relative h-full overflow-hidden rounded bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.55)]"
           style={{ width: width() }}
         >
           <div

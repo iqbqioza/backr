@@ -43,6 +43,24 @@
       opacity: 0.85;
     }
   }
+  @keyframes meter-tremble {
+    0%,
+    100% {
+      transform: translate(0, 0);
+    }
+    20% {
+      transform: translate(1px, -0.5px);
+    }
+    40% {
+      transform: translate(-1px, 0.5px);
+    }
+    60% {
+      transform: translate(1px, 0.5px);
+    }
+    80% {
+      transform: translate(-1px, -0.5px);
+    }
+  }
   .meter-shine {
     animation: meter-shine 2.4s ease-in-out infinite;
   }
@@ -53,7 +71,9 @@
     animation-duration: 2.7s;
     animation-delay: 0.9s;
   }
-  .meter-flicker {
-    animation: meter-flicker 3.2s linear infinite;
+  .meter-energy {
+    animation:
+      meter-flicker 3.2s linear infinite,
+      meter-tremble 0.22s linear infinite;
   }
 }
