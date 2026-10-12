@@ -210,7 +210,7 @@ export default function GoalDetail() {
 
   const isAuthor = () => {
     const s = getSession();
-    return s !== null && s.method !== "readonly" && s.pubkey === card()?.pubkey;
+    return s !== null && s.pubkey === card()?.pubkey;
   };
 
   const onDelete = () => {

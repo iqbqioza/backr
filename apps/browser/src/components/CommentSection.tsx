@@ -194,7 +194,7 @@ export default function CommentSection(props: {
 
   const isMine = (comment: CommentView) => {
     const session = getSession();
-    return session !== null && session.method !== "readonly" && session.pubkey === comment.pubkey;
+    return session !== null && session.pubkey === comment.pubkey;
   };
 
   const remove = (comment: CommentView) => {

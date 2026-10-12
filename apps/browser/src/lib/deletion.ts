@@ -10,7 +10,7 @@ export async function requestDeletion(
   reason = "",
 ): Promise<void> {
   const session = getSession();
-  if (session === null || session.method === "readonly") {
+  if (session === null) {
     throw new Error("Signing required to delete");
   }
   const draft = buildDeletionEvent({

@@ -14,7 +14,7 @@ async function publishReport(args: {
   content: string;
 }): Promise<ReportData> {
   const session = getSession();
-  if (session === null || session.method === "readonly") {
+  if (session === null) {
     throw new Error("Signing required to post an update");
   }
   const draft = buildReport({

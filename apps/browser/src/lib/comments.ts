@@ -121,7 +121,7 @@ export async function postComment(args: {
   content: string;
 }): Promise<CommentView> {
   const session = getSession();
-  if (session === null || session.method === "readonly") {
+  if (session === null) {
     throw new Error("Signing required to comment");
   }
   const relayHint = args.relayUrl;

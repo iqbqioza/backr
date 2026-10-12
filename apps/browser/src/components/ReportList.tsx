@@ -52,7 +52,7 @@ export default function ReportList(props: {
 
   const isMine = (report: ReportData) => {
     const session = getSession();
-    return session !== null && session.method !== "readonly" && session.pubkey === report.author;
+    return session !== null && session.pubkey === report.author;
   };
 
   const startEdit = (report: ReportData) => {

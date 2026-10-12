@@ -1,19 +1,10 @@
 import { createSignal } from "solid-js";
-import {
-  bytesToHex,
-  decodeBare,
-  derivePublicKey,
-  hexToBytes,
-  isNostrEventLike,
-  signEvent,
-  type NostrEventLike,
-  type UnsignedEvent,
-} from "backr-nostr-nips";
+import { isNostrEventLike, type NostrEventLike, type UnsignedEvent } from "backr-nostr-nips";
 import { connectBunker, type BunkerClient } from "backr-nostr-ws";
 import { DEFAULT_RELAY } from "./const";
 import { fetchRelayList } from "./goals";
 
-export type AuthMethod = "nip07" | "nsec" | "bunker" | "readonly";
+export type AuthMethod = "nip07" | "bunker";
 
 export interface Session {
   method: AuthMethod;
@@ -80,9 +71,9 @@ function persistSession(): void {
 }
 
 /**
- * Reload survival: restores the display session for methods whose keys
- * live outside the page (extension / none). nsec/bunker secrets are
- * memory-only by policy and cannot be restored.
+ * Reload survival: restores the extension session. Its key lives in the
+ * extension, so a restore only revives the display identity. Bunker
+ * connections are memory-only and cannot be restored.
  */
 export function restoreSession(): void {
   const store = storage();
@@ -92,44 +83,21 @@ export function restoreSession(): void {
     if (raw === null) return;
     const data = JSON.parse(raw) as { method?: unknown; pubkey?: unknown };
     if (typeof data.pubkey !== "string" || !/^[0-9a-f]{64}$/.test(data.pubkey)) return;
-    if (data.method === "readonly" || data.method === "nip07") {
-      setSession({ method: data.method, pubkey: data.pubkey });
+    if (data.method === "nip07") {
+      setSession({ method: "nip07", pubkey: data.pubkey });
     }
   } catch {
     // corrupted entry: stay logged out
   }
 }
 
-/** 秘密鍵・bunker 接続はメモリ保持のみ。保存・送信しない */
-let nsecSecret: Uint8Array | null = null;
+/** bunker 接続はメモリ保持のみ。保存・送信しない */
 let bunkerClient: BunkerClient | null = null;
 
 export function loginNip07(pubkey: string): void {
-  nsecSecret = null;
   bunkerClient?.close();
   bunkerClient = null;
   setSession({ method: "nip07", pubkey });
-  setUserRelays(EMPTY_RELAYS);
-  loadUserRelays(pubkey);
-  persistSession();
-}
-
-export function loginNsec(secretHex: string, pubkey: string): void {
-  const bytes = hexToBytes(secretHex);
-  nsecSecret = bytes === null ? null : bytes.slice();
-  bunkerClient?.close();
-  bunkerClient = null;
-  setSession({ method: "nsec", pubkey });
-  setUserRelays(EMPTY_RELAYS);
-  loadUserRelays(pubkey);
-  persistSession();
-}
-
-export function loginReadonly(pubkey: string): void {
-  nsecSecret = null;
-  bunkerClient?.close();
-  bunkerClient = null;
-  setSession({ method: "readonly", pubkey });
   setUserRelays(EMPTY_RELAYS);
   loadUserRelays(pubkey);
   persistSession();
@@ -140,7 +108,6 @@ export async function loginBunker(bunkerUrl: string): Promise<void> {
   const client = await connectBunker(bunkerUrl, {
     metadata: JSON.stringify({ name: "Backr", url: "https://github.com/iqbqioza/backr" }),
   });
-  nsecSecret = null;
   bunkerClient?.close();
   bunkerClient = client;
   setSession({ method: "bunker", pubkey: client.userPubkey });
@@ -150,7 +117,6 @@ export async function loginBunker(bunkerUrl: string): Promise<void> {
 }
 
 export function logout(): void {
-  nsecSecret = null;
   bunkerClient?.close();
   bunkerClient = null;
   setSession(null);
@@ -159,48 +125,17 @@ export function logout(): void {
 }
 
 export function canSign(): boolean {
-  const s = session();
-  return s !== null && s.method !== "readonly";
+  return session() !== null;
 }
 
 export function hasNip07(): boolean {
   return typeof window !== "undefined" && window.nostr !== undefined;
 }
 
-export interface SecretInfo {
-  secretHex: string;
-  pubkey: string;
-}
-
-/** nsec1… または 64桁hex (秘密鍵として解釈) */
-export function resolveSecret(input: string): SecretInfo | null {
-  const trimmed = input.trim();
-  let hex: string | null = null;
-  if (trimmed.startsWith("nsec1")) {
-    hex = decodeBare(trimmed, "nsec");
-  } else if (/^[0-9a-f]{64}$/.test(trimmed)) {
-    hex = trimmed;
-  }
-  if (hex === null) return null;
-  const pubkey = derivePublicKey(hex);
-  return pubkey === null ? null : { secretHex: hex, pubkey };
-}
-
-/** npub1… または 64桁hex (公開鍵として解釈) */
-export function resolvePubkeyInput(input: string): string | null {
-  const trimmed = input.trim();
-  if (trimmed.startsWith("npub1")) return decodeBare(trimmed, "npub");
-  return /^[0-9a-f]{64}$/.test(trimmed) ? trimmed : null;
-}
-
-/** セッションの手段で署名。readonly・未ログインは null */
+/** セッションの手段で署名。未ログインは null */
 export async function signWithSession(unsigned: UnsignedEvent): Promise<NostrEventLike | null> {
   const s = session();
-  if (s === null || s.method === "readonly") return null;
-  if (s.method === "nsec") {
-    if (nsecSecret === null) return null;
-    return signEvent(unsigned, bytesToHex(nsecSecret));
-  }
+  if (s === null) return null;
   if (s.method === "bunker") {
     if (bunkerClient === null) return null;
     try {

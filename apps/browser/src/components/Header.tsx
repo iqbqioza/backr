@@ -4,11 +4,7 @@ import {
   hasNip07,
   loginBunker,
   loginNip07,
-  loginNsec,
-  loginReadonly,
   logout,
-  resolvePubkeyInput,
-  resolveSecret,
   type AuthMethod,
 } from "../lib/auth";
 import { AUTH, NAV } from "../lib/copy";
@@ -17,15 +13,11 @@ import { shortKey } from "./people";
 
 const METHOD_LABEL: Record<AuthMethod, string> = {
   nip07: "Extension",
-  nsec: "nsec",
   bunker: "Bunker",
-  readonly: "Read-only",
 };
 
 export default function Header() {
   const [open, setOpen] = createSignal(false);
-  const [nsecInput, setNsecInput] = createSignal("");
-  const [npubInput, setNpubInput] = createSignal("");
   const [bunkerInput, setBunkerInput] = createSignal("");
   const [working, setWorking] = createSignal(false);
   const [notice, setNotice] = createSignal<string | null>(null);
@@ -50,30 +42,6 @@ export default function Header() {
       .catch(() => {
         setNotice(AUTH.errors.extensionDenied);
       });
-  };
-
-  const connectNsec = () => {
-    const info = resolveSecret(nsecInput());
-    if (info === null) {
-      setNotice(AUTH.errors.badNsec);
-      return;
-    }
-    loginNsec(info.secretHex, info.pubkey);
-    setNsecInput("");
-    setNotice(null);
-    setOpen(false);
-  };
-
-  const connectReadonly = () => {
-    const pubkey = resolvePubkeyInput(npubInput());
-    if (pubkey === null) {
-      setNotice(AUTH.errors.badNpub);
-      return;
-    }
-    loginReadonly(pubkey);
-    setNpubInput("");
-    setNotice(null);
-    setOpen(false);
   };
 
   const connectBunker = () => {
@@ -130,7 +98,7 @@ export default function Header() {
         ) : (
           <span class="ml-auto flex items-center gap-2 text-sm">
             <span class="rounded bg-zinc-800 px-2 py-0.5 text-xs text-zinc-300">
-              {METHOD_LABEL[session()?.method ?? "readonly"]}
+              {METHOD_LABEL[session()?.method ?? "nip07"]}
             </span>
             <span class="font-mono text-zinc-300">{shortKey(session()?.pubkey ?? "")}</span>
             <button
@@ -181,26 +149,6 @@ export default function Header() {
                 </button>
               </div>
               <div class="rounded border border-zinc-700 p-3">
-                <p class="font-medium">{AUTH.nsec}</p>
-                <p class="mt-1 text-sm text-zinc-400">{AUTH.nsecDesc}</p>
-                <input
-                  class={input}
-                  type="password"
-                  placeholder={AUTH.nsecPlaceholder}
-                  value={nsecInput()}
-                  onInput={(e) => {
-                    setNsecInput(e.currentTarget.value);
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={connectNsec}
-                  class="mt-2 rounded border border-zinc-600 px-3 py-1 text-sm hover:border-zinc-300"
-                >
-                  {AUTH.nsecLogin}
-                </button>
-              </div>
-              <div class="rounded border border-zinc-700 p-3">
                 <p class="font-medium">{AUTH.bunker}</p>
                 <p class="mt-1 text-sm text-zinc-400">{AUTH.bunkerDesc}</p>
                 <input
@@ -220,28 +168,8 @@ export default function Header() {
                   {working() ? AUTH.bunkerConnecting : AUTH.bunkerConnect}
                 </button>
               </div>
-              <div class="rounded border border-zinc-700 p-3">
-                <p class="font-medium">{AUTH.readonly}</p>
-                <p class="mt-1 text-sm text-zinc-400">{AUTH.readonlyDesc}</p>
-                <input
-                  class={input}
-                  placeholder={AUTH.readonlyPlaceholder}
-                  value={npubInput()}
-                  onInput={(e) => {
-                    setNpubInput(e.currentTarget.value);
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={connectReadonly}
-                  class="mt-2 rounded border border-zinc-600 px-3 py-1 text-sm hover:border-zinc-300"
-                >
-                  {AUTH.readonlyEnter}
-                </button>
-              </div>
             </div>
             {notice() !== null && <p class="mt-3 text-sm text-red-400">{notice()}</p>}
-            <p class="mt-3 text-xs text-zinc-500">{AUTH.memoryOnly}</p>
           </div>
         </div>
       )}
