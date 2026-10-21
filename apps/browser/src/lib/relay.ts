@@ -1,3 +1,4 @@
+import { verifyEventSignature } from "backr-nostr-nips";
 import { buildReq, parseRelayMessage, type NostrEventLike } from "backr-nostr-ws";
 import { DEFAULT_RELAY } from "./const";
 
@@ -99,7 +100,9 @@ export function fetchEvents(
     socket.addEventListener("message", (msg) => {
       const parsed = parseRelayMessage(String(msg.data));
       if (parsed === null) return;
-      if (parsed.type === "EVENT") events.push(parsed.event);
+      if (parsed.type === "EVENT" && verifyEventSignature(parsed.event)) {
+        events.push(parsed.event);
+      }
       else if (parsed.type === "EOSE" || parsed.type === "CLOSED") done(events);
     });
     socket.addEventListener("error", () => {

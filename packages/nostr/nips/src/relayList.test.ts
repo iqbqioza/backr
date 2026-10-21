@@ -33,6 +33,7 @@ describe("parseRelayList", () => {
       parseRelayList(
         ev([
           ["r", "https://a.example", "read"],
+          ["r", "ws://a.example", "read"],
           ["r", "wss://a.example", "read"],
           ["r", "wss://a.example", "read"],
           ["r", "wss://b.example", "spam"],

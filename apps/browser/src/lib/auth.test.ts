@@ -8,8 +8,10 @@ import {
   restoreSession,
   signWithSession,
 } from "./auth";
+import { derivePublicKey, signEvent } from "backr-nostr-nips";
 
-const PUBKEY_HEX = "7e7e9c42a91bfef19fa929e5fda1b72e0ebc1a4c1141673e2794234d86addf4e";
+const SECRET_HEX = "0".repeat(63) + "1";
+const PUBKEY_HEX = derivePublicKey(SECRET_HEX) as string;
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -39,15 +41,13 @@ describe("session", () => {
   });
 
   it("signs through the extension", async () => {
-    const signed = {
-      id: "a".repeat(64),
-      pubkey: PUBKEY_HEX,
-      created_at: 1,
-      kind: 1,
-      tags: [],
-      content: "hello",
-      sig: "b".repeat(128),
-    };
+    // The extension's output is signature-verified before publishing, so the
+    // fixture must be a genuinely signed event, not a fabricated one.
+    const signed = signEvent(
+      { pubkey: PUBKEY_HEX, created_at: 1, kind: 1, tags: [], content: "hello" },
+      SECRET_HEX,
+    );
+    expect(signed).not.toBeNull();
     vi.stubGlobal("window", {
       nostr: {
         getPublicKey: async () => PUBKEY_HEX,
@@ -63,6 +63,29 @@ describe("session", () => {
       content: "hello",
     });
     expect(result?.pubkey).toBe(PUBKEY_HEX);
+  });
+
+  it("rejects extension output whose signature does not verify", async () => {
+    const signed = signEvent(
+      { pubkey: PUBKEY_HEX, created_at: 1, kind: 1, tags: [], content: "hello" },
+      SECRET_HEX,
+    );
+    vi.stubGlobal("window", {
+      nostr: {
+        getPublicKey: async () => PUBKEY_HEX,
+        // Tampered content: signature no longer matches.
+        signEvent: async () => ({ ...signed, content: "tampered" }),
+      },
+    });
+    loginNip07(PUBKEY_HEX);
+    const result = await signWithSession({
+      pubkey: PUBKEY_HEX,
+      created_at: 1,
+      kind: 1,
+      tags: [],
+      content: "hello",
+    });
+    expect(result).toBeNull();
   });
 });
 

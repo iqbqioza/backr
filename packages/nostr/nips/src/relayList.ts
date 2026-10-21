@@ -7,8 +7,9 @@ export interface RelayList {
 
 function isWss(url: string): boolean {
   try {
-    const u = new URL(url);
-    return u.protocol === "wss:" || u.protocol === "ws:";
+    // Cleartext ws: is rejected: relay lists arrive from events that may not
+    // be trustworthy, and a ws: entry would downgrade connections to plaintext.
+    return new URL(url).protocol === "wss:";
   } catch {
     return false;
   }
