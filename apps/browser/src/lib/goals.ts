@@ -191,7 +191,14 @@ export function parseProfile(pubkey: string, content: string): ProfileView | nul
     name = d["name"];
   }
   const profile: ProfileView = { pubkey, name };
-  if (typeof d["picture"] === "string" && d["picture"].length > 0) profile.image = d["picture"];
+  if (typeof d["picture"] === "string" && d["picture"].length > 0) {
+    try {
+      const u = new URL(d["picture"]);
+      if (u.protocol === "http:" || u.protocol === "https:") profile.image = d["picture"];
+    } catch {
+      // ignore invalid picture URLs
+    }
+  }
   if (typeof d["lud16"] === "string" && d["lud16"].length > 0) profile.lud16 = d["lud16"];
   if (typeof d["lud06"] === "string" && d["lud06"].length > 0) profile.lud06 = d["lud06"];
   if (typeof d["about"] === "string" && d["about"].length > 0) profile.about = d["about"];

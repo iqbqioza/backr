@@ -1,5 +1,10 @@
 import { createSignal } from "solid-js";
-import { isNostrEventLike, type NostrEventLike, type UnsignedEvent } from "backr-nostr-nips";
+import {
+  isNostrEventLike,
+  verifyEventSignature,
+  type NostrEventLike,
+  type UnsignedEvent,
+} from "backr-nostr-nips";
 import { connectBunker, type BunkerClient } from "backr-nostr-ws";
 import { DEFAULT_RELAY } from "./const";
 import { fetchRelayList } from "./goals";
@@ -147,7 +152,9 @@ export async function signWithSession(unsigned: UnsignedEvent): Promise<NostrEve
   if (typeof window === "undefined" || window.nostr === undefined) return null;
   try {
     const signed = await window.nostr.signEvent(unsigned);
-    return isNostrEventLike(signed) ? signed : null;
+    // The extension could be buggy or tampered with: mirror the bunker path
+    // and only publish events whose signature actually verifies.
+    return isNostrEventLike(signed) && verifyEventSignature(signed) ? signed : null;
   } catch {
     return null;
   }
